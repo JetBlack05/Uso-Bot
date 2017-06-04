@@ -45,3 +45,5 @@ Look at the little circle on my profile !
 *The symbol <:away:317951063682711556> means* : I'm currently in developement, you can use me but i'm not verry stable and i can act oddly
 *The symbol <:offline:317951122243452938> means* : Simply offline
 *The symbol <:online:317951041838514179> means* : Simply up and running !
+
+Git : https://github.com/Renondedju/Uso-Bot
