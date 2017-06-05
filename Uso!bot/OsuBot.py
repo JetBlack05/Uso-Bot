@@ -266,7 +266,7 @@ async def on_message(message):
 				await client.send_message(channel, embed=em)
 				print (recomendedBeatmap)
 		else:
-			await client.send_message(channel, "Uhh sorry, seems you don't linked your osu account ..\nUse the command *" + commandPrefix + "link_user 'Your osu username' or 'your osu Id'* to link the bot to your osu account !\nEx. " + commandPrefix + "link_user Renondedju")
+			await client.send_message(channel, "Uhh sorry, seems like you haven't linked your osu! account...\nPlease use the command *" + commandPrefix + "link_user 'Your osu username' or 'your osu Id'* to link the bot to your osu account !\nEx. " + commandPrefix + "link_user Renondedju")
 
 	if message.content.startswith(commandPrefix + 'add_beatmap') and (rank in ['ADMIN', 'MASTER']):
 		await client.send_message(logsChannel, Log(str(message.author), message.content, 0))
@@ -292,7 +292,7 @@ async def on_message(message):
 
 			beatmapfile = open(message.content.replace(commandPrefix + 'add_beats ', ""), "r")
 			beatmapToProcess = beatmapfile.read().split('\n')
-			await client.send_message(message.channel, "<:streaming:317951088646946826> Starting the importation of " + str(len(beatmapToProcess)) + " beatmaps")
+			await client.send_message(message.channel, "<:streaming:317951088646946826> Starting the import of " + str(len(beatmapToProcess)) + " beatmaps")
 			await client.change_presence(status=discord.Status('dnd'), game=discord.Game(name='Osu !'))
 
 			conn = sqlite3.connect(databasePath)
@@ -306,7 +306,7 @@ async def on_message(message):
 			alreadyExists = 0
 			for beatmapUrl in beatmapToProcess:
 				last_message = await client.send_message(logsChannel, "<:empty:317951266355544065> " + beatmapUrl + " ( " + str(processed) + "/" + str(len(beatmapToProcess))  + " ) ")
-				print ("Prossesing " + beatmapUrl + " - " + str(processed) + "/" + str(len(beatmapToProcess)), end="")
+				print ("Processing " + beatmapUrl + " - " + str(processed) + "/" + str(len(beatmapToProcess)), end="")
 
 				cursor.execute("select url from beatmaps where url = '" + beatmapUrl + "'")
 				if len(cursor.fetchall()) == 0:
@@ -328,12 +328,12 @@ async def on_message(message):
 				processed += 1
 			conn.close()
 
-			await client.send_message(logsChannel, Log(str(message.author),  "Succesfuly added " + str(len(beatmapToProcess)) + " beatmaps to Database", 1))
-			await client.send_message(message.channel, "<:online:317951041838514179> Back online ! - __Done :__ " + str(done) + " , __InfoError :__ " + str(infoError) + " , __Already exisits :__ " + str(alreadyExists))
+			await client.send_message(logsChannel, Log(str(message.author),  "Successfuly added " + str(len(beatmapToProcess)) + " beatmaps to the database", 1))
+			await client.send_message(message.channel, "<:online:317951041838514179> Back online ! - __Done :__ " + str(done) + " , __InfoError :__ " + str(infoError) + " , __Already exists :__ " + str(alreadyExists))
 			await client.change_presence(status=discord.Status('online'), game=discord.Game(name='Osu !'))
 
 		else:
-			await client.send_message(logsChannel, Log(str(message.author), "tryed to add multiple beatmaps", 1))
+			await client.send_message(logsChannel, Log(str(message.author), "tried to add multiple beatmaps", 1))
 			await client.send_message(message.channel, "Sorry, Only Renondedju can do this !")
 
 	if message.content.startswith(commandPrefix + 'mute') and (rank in ['USER', 'ADMIN', 'MASTER']) and (message.channel.permissions_for(message.author).administrator == True or str(message.author) == "Renondedju#0204"):
@@ -382,17 +382,17 @@ async def on_message(message):
 				em = discord.Embed(title=str(name), description=description, colour=0xf44242)
 				await client.send_message(channel, embed=em)
 			else:
-				await client.send_message(channel, "Can't get beatmap info ..")
+				await client.send_message(channel, "Can't get beatmap info...")
 
 	if message.content.startswith(commandPrefix + 'kill') and (rank in ['MASTER']):
 		if str(message.author.id) == constants.Settings.ownerDiscordId:
 			await client.send_message(logsChannel, Log(str(client.user.name), "Killing the bot !", 0))
-			await client.send_message(message.channel, "Alright, killing myself ... bye evryone !")
+			await client.send_message(message.channel, "Alright, killing myself ... bye everyone !")
 			client.logout()
 			client.close()
 			sys.exit("Bot has been shutdown by command correctly !")
 		else:
-			await client.send_message(logsChannel, Log(str(message.author), "tryed to kill the bot !", 1))
+			await client.send_message(logsChannel, Log(str(message.author), "tried to kill the bot !", 1))
 			await client.send_message(message.channel, "Sorry, Only Renondedju can do this !")
 
 	if message.content.startswith(commandPrefix + 'user') and (rank in ['USER', 'ADMIN', 'MASTER']):
@@ -405,11 +405,11 @@ async def on_message(message):
 		if not (results == []):
 			for item in results[0]:
 				stats.append(item)
-			description = "Accuracy : " + str(stats[0][1])[0:4] + "\nPP : " + str(stats[13][1]) + "\nCountry : " + stats[7][1] + "\nLevel : " + str(stats[9][1])[0:4] + "\nPlays : " + str(stats[10][1]) + "\nRank : " + str(stats[12][1]) + "\nCountry rank : " + str(stats[11][1])
+			description = "Accuracy: " + str(stats[0][1])[0:4] + "\npp: " + str(stats[13][1]) + "\nCountry: " + stats[7][1] + "\nLevel: " + str(stats[9][1])[0:4] + "\nPlays: " + str(stats[10][1]) + "\nRank: " + str(stats[12][1]) + "\nCountry rank: " + str(stats[11][1])
 			em = discord.Embed(title=str(stats[17][1]), description=description, colour=0xf44242, url="https://new.ppy.sh/u/" + str(stats[16][1]) + "#osu").set_footer(text="https://new.ppy.sh/u/" + str(stats[16][1]) + "#osu")
 			await client.send_message(channel, embed=em)
 		else:
-			await client.send_message(channel, "User not found !")
+			await client.send_message(channel, "User not found!")
 
 	if message.content.startswith(commandPrefix + 'link_user') and (rank in ['USER', 'ADMIN', 'MASTER']):
 		await client.send_message(logsChannel, Log(str(message.author), message.content, 0))
@@ -430,26 +430,26 @@ async def on_message(message):
 			osuUsername = stats[17][1]
 			userDiscordId = int(message.author.id)
 			operationDone = link_user(userDiscordId, osuUsername, osuId, "USER")
-			description = "Accuracy : " + str(stats[0][1])[0:4] + "\nPP : " + str(stats[13][1]) + "\nCountry : " + stats[7][1] + "\nLevel : " + str(stats[9][1])[0:4] + "\nPlays : " + str(stats[10][1]) + "\nRank : " + str(stats[12][1]) + "\nCountry rank : " + str(stats[11][1])
+			description = "Accuracy: " + str(stats[0][1])[0:4] + "\npp: " + str(stats[13][1]) + "\nCountry: " + stats[7][1] + "\nLevel: " + str(stats[9][1])[0:4] + "\nPlays: " + str(stats[10][1]) + "\nRank: " + str(stats[12][1]) + "\nCountry rank: " + str(stats[11][1])
 			em = discord.Embed(title=str(stats[17][1]), description=description, colour=0xf44242, url="https://new.ppy.sh/u/" + str(stats[16][1]) + "#osu").set_footer(text="https://new.ppy.sh/u/" + str(stats[16][1]) + "#osu")
 
-			await client.send_message(channel, "Your account has been succesfuly " + operationDone + " to ")
-			await client.send_message(logsChannel, Log(str(client.user.name), "Your account has been succesfuly " + operationDone + " to osu username '" + stats[17][1] + "'", 0))
+			await client.send_message(channel, "Your account has been successfuly " + operationDone + " to ")
+			await client.send_message(logsChannel, Log(str(client.user.name), "Your account has been successfuly " + operationDone + " to osu! username '" + stats[17][1] + "'", 0))
 			await client.send_message(channel, embed=em)
 			if operationDone == "linked":
-				await client.send_message(channel, "Please wait while i'm updating your stats ...")
+				await client.send_message(channel, "Please wait while I'm updating your stats ...")
 				await client.send_message(logsChannel, Log(str(message.author), message.content, 0))
 
 				if update_pp_stats(osuId, message.author.id) == 0:
-					await client.send_message(logsChannel, Log(str(client.user.name), "Succesfuly updated " + str(message.author) + " pp's stats", 0))
-					await client.send_message(channel, "Succesfuly updated " + str(message.author) + " pp's stats")
+					await client.send_message(logsChannel, Log(str(client.user.name), "Successfuly updated " + str(message.author) + "'s pp stats", 0))
+					await client.send_message(channel, "Successfuly updated " + str(message.author) + "'s pp stats")
 
 				else:
 					await client.send_message(logsChannel, Log(str(client.user.name), "Unexpected error for " + str(message.author), 2))
 					await client.send_message(channel, "Unexpected error, please try again later or contact Renondedju for more help")
 		else:
 			await client.send_message(logsChannel, Log(str(client.user.name), "User not found", 0))
-			await client.send_message(channel, "User not found !")
+			await client.send_message(channel, "User not found!")
 
 	if message.content.startswith(commandPrefix + 'update_pp_stats') and (rank in ['USER', 'ADMIN', 'MASTER']):
 		await client.send_message(logsChannel, Log(str(message.author), message.content, 0))
@@ -461,17 +461,17 @@ async def on_message(message):
 		if not (osuId == None):
 			result = update_pp_stats(osuId, message.author.id)
 			if result == 0:
-				await client.send_message(logsChannel, Log(str(client.user.name), "Succesfuly updated " + str(message.author) + " pp's stats", 0))
-				await client.send_message(channel, "Succesfuly updated " + str(message.author) + " pp's stats")
+				await client.send_message(logsChannel, Log(str(client.user.name), "Succesfuly updated " + str(message.author) + "'s pp stats", 0))
+				await client.send_message(channel, "Succesfuly updated " + str(message.author) + "'s pp stats")
 			elif result == 1:
-				await client.send_message(logsChannel, Log(str(client.user.name), "Wrong osu Id for " + str(message.author), 1))
-				await client.send_message(channel, "Wrong osu Id for " + str(message.author) + ". Try to link your account with an osu account by typing the command *" + commandPrefix + "link_user 'Your osu username'*")
+				await client.send_message(logsChannel, Log(str(client.user.name), "Wrong osu! id for " + str(message.author), 1))
+				await client.send_message(channel, "Wrong osu! id for " + str(message.author) + ". Try to link your account with an osu! account by typing the command *" + commandPrefix + "link_user 'Your osu username'*")
 			elif result == 2:
 				await client.send_message(logsChannel, Log(str(client.user.name), "Unexpected error for " + str(message.author), 2))
 				await client.send_message(channel, "Unexpected error, please try again later or contact Renondedju for more help")
 		else:
-			await client.send_message(logsChannel, Log(str(client.user.name), "Wrong osu Id for " + str(message.author), 1))
-			await client.send_message(channel, "Wrong osu Id for " + str(message.author) + ". Try to link your account with an osu account by typing the command *" + commandPrefix + "link_user 'Your osu username'*")
+			await client.send_message(logsChannel, Log(str(client.user.name), "Wrong osu! id for " + str(message.author), 1))
+			await client.send_message(channel, "Wrong osu! id for " + str(message.author) + ". Try to link your account with an osu account by typing the command *" + commandPrefix + "link_user 'Your osu username'*")
 
 	if message.content.startswith(commandPrefix + 'help') and (rank in ['USER', 'ADMIN', 'MASTER']):
 		if rank == 'ADMIN':
