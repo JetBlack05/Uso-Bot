@@ -7,22 +7,22 @@ The current command prefix is ``o!``
 
 → ``help`` Show this message
 
-→ ``r`` or ``recommend`` Will automaticly recommend you a beatmap based on your pp average
+→ ``r`` or ``recommend`` Automatically recommend you a beatmap based on your average amount of pp
 ➥*ex. o!recommend*
 
-→ ``user <osu username or osu id>`` Will display the user stats (osu! mode)
+→ ``user <osu username or osu id>`` Displays user stats (osu! mode)
 ➥*ex. o!user Renondedju*
 
-→ ``pp <beatmap url> +<mods>`` Is a beatmap stats analyser (osu! mode only)
+→ ``pp <beatmap url> +<mods>`` Beatmap stats analyser (osu! mode)
 ➥*ex. o!pp https://osu.ppy.sh/b/1199897&m=0 +HDDT*
 
-→ ``mute <'on' or 'off'>`` **admins only** allows the bot to speak in the server or not *(if not the bot will answer in pm)*
+→ ``mute <'on' or 'off'>`` **admins only** allows the bot to chat in the server or not *(if not the bot will answer in pm)*
 ➥*ex. o!mute on*
 
-→ ``link_user <osu username or osu id>`` Link your discord account to an osu account (requiered for the commands ``r`` and ``update_pp_stats``)
+→ ``link_user <osu username or osu id>`` Link your discord account to an osu! account (requiered for ``r`` and ``update_pp_stats``)
 ➥*ex. o!link_user Renondedju*
 
-→ ``update_pp_stats`` Updates your osu pp stats *- use this if you just done a really good score -* (this command is runned automatically once evry day for evryone)
+→ ``update_pp_stats`` Updates your osu! pp stats *- use this if you have just done a really good score -* (this command is run automatically once every day for everyone)
 ➥*ex. o!update_pp_stats*
 
 ▬▬▬ Status ▬▬▬
