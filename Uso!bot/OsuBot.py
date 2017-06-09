@@ -30,7 +30,7 @@ def return_user_rank(discordId):
 	if not discordId == constants.Settings.ownerDiscordId:
 		conn = sqlite3.connect(databasePath)
 		cursor = conn.cursor()
-		cursor.execute("SELECT rank FROM users WHERE discordId = " + str(discordId))
+		cursor.execute("SELECT rank FROM users WHERE discordId = ?", (str(discordId),))
 		try:
 			rank = cursor.fetchall()[0][0]
 		except IndexError:
@@ -57,7 +57,7 @@ def update_pp_stats(osuId, discordId):
 			return 1
 		conn = sqlite3.connect(databasePath)
 		cursor = conn.cursor()
-		cursor.execute("UPDATE users SET ppAverage = " + str(pp_average) + " WHERE DiscordId = " + str(discordId))
+		cursor.execute("UPDATE users SET ppAverage = ? WHERE DiscordId = ?", (str(pp_average), str(discordId),))
 		conn.commit()
 		print ("Pp stats updated for osuId : " + str(osuId) + " with discordId : " + str(discordId) + " - PP average = " + str(pp_average))
 		return 0
@@ -83,7 +83,7 @@ def link_user(discordId, osuName, osuId, rank):
 	print ("Linking : discordId : " + str(discordId) + ", osuName : " + osuName + ", osuId : " + str(osuId) + " to Database.", end = " ")
 	conn = sqlite3.connect(databasePath)
 	cursor = conn.cursor()
-	cursor.execute("SELECT * FROM users WHERE discordId = " + str(discordId))
+	cursor.execute("SELECT * FROM users WHERE discordId = ?", (str(discordId),))
 	if len(cursor.fetchall()) == 0:
 		cursor.execute("""
 		INSERT INTO users (discordId, osuName, osuId, rank) 
@@ -93,7 +93,7 @@ def link_user(discordId, osuName, osuId, rank):
 		print ("Added")
 		result = "linked"
 	else:
-		cursor.execute("UPDATE users SET osuName = '" + osuName + "', osuId = " + str(osuId) + ", rank = '" + rank + "' WHERE discordId = " + str(discordId))
+		cursor.execute("UPDATE users SET osuName = ?, osuId = ?, rank = ? WHERE discordId = ?", (osuName, str(osuId), rank, str(discordId)))
 		conn.commit()
 		print("Updated")
 		result = "updated"
@@ -194,7 +194,7 @@ async def on_ready():
 	print ('Ready !')
 	if (set(sys.argv) & set(["online"])) and hello == False:
 		await client.send_message(mainChannel, "<:online:317951041838514179> Uso!<:Bot:317951180737347587> is now online !")
-		await client.change_presence(status=discord.Status('online'), game=discord.Game(name='Osu !'))
+		await client.change_presence(status=discord.Status('online'), game=discord.Game(name='o!help'))
 	if set(sys.argv) & set(["dev"]):
 		await client.change_presence(status=discord.Status('idle'), game=discord.Game(name='Dev mode'))
  
@@ -210,7 +210,7 @@ async def on_message(message):
 	if message.content.startswith(commandPrefix) and message.channel.is_private == False and message.content.startswith(commandPrefix + 'mute') == False:
 		conn = sqlite3.connect(databasePath)
 		cursor = conn.cursor()
-		cursor.execute("SELECT state FROM muted WHERE serverID = " + str(message.server.id))
+		cursor.execute("SELECT state FROM muted WHERE serverID = ?", (str(message.server.id),))
 		if cursor.fetchall()[0][0] == 'on':
 			channel = message.author
 		else:
@@ -220,10 +220,24 @@ async def on_message(message):
 		await client.send_message(message.channel, "Hi ! " + str(message.author) + " my command prefix is '" + commandPrefix + "'")
 		#Hey !
 
+	if message.content.startswith(commandPrefix + 'status') and (rank in ['ADMIN', 'MASTER']):
+		parameters = message.content.replace(commandPrefix + 'status ', "")
+		playmessage = parameters.split(" | ")[0]
+		status = parameters.split(" | ")[1]
+		await asyncio.sleep(1)
+		await client.change_presence(game=discord.Game(name=playmessage), status=discord.Status(status))
+		await client.send_message(channel, "Play message set to:``" + playmessage + "``, status set to:``" + status + "``")
+
+	if message.content.startswith(commandPrefix + 'support') and (rank in ['USER', 'ADMIN', 'MASTER']):
+		supportfile = open(constants.Paths.supportFile, "r")
+		supportString = supportfile.read()
+		supportfile.close()
+		await client.send_message(channel, supportString)
+
 	if (message.content.startswith(commandPrefix + 'recomandation') or message.content.startswith(commandPrefix + 'r')) and (rank in ['USER', 'ADMIN', 'MASTER']):
 		conn = sqlite3.connect(databasePath)
 		cursor = conn.cursor()
-		cursor.execute("SELECT ppAverage FROM users WHERE DiscordId = " + str(message.author.id))
+		cursor.execute("SELECT ppAverage FROM users WHERE DiscordId = ?", (str(message.author.id),))
 		try:
 			result = cursor.fetchall()[0][0]
 		except:
@@ -235,13 +249,13 @@ async def on_message(message):
 			else:
 				pp_average_fluctuation = pp_average*0.05
 
-				cursor.execute("Select recomendedBeatmaps From users where DiscordId = " + str(message.author.id))
+				cursor.execute("Select recomendedBeatmaps From users where DiscordId = ?", (str(message.author.id),))
 				alreadyRecomendedId = cursor.fetchall()[0][0]
 
 				if alreadyRecomendedId == None:
 					alreadyRecomendedId = "00000"
 
-				cursor.execute("Select * from beatmaps where pp_95 >= " + str(pp_average-pp_average_fluctuation) + " and pp_95 <= " + str(pp_average+pp_average_fluctuation) + " and id not in(" + alreadyRecomendedId + ") Limit 1")
+				cursor.execute("Select * from beatmaps where pp_95 >= ? and pp_95 <= ? and id not in (?) Limit 1", (str(pp_average-pp_average_fluctuation), str(pp_average+pp_average_fluctuation), alreadyRecomendedId ))
 
 				recomendedBeatmap = cursor.fetchall()[0]
 				url = recomendedBeatmap[0]
@@ -255,7 +269,7 @@ async def on_message(message):
 
 				alreadyRecomendedId += "," + str(recomendedId)
 
-				cursor.execute("UPDATE users SET recomendedBeatmaps = '" + alreadyRecomendedId + "' where DiscordId = '" + str(message.author.id) + "'")
+				cursor.execute("UPDATE users SET recomendedBeatmaps = ? where DiscordId = ?", (alreadyRecomendedId, str(message.author.id)))
 				conn.commit()
 				conn.close()
 
@@ -270,7 +284,7 @@ async def on_message(message):
 
 	if message.content.startswith(commandPrefix + 'add_beatmap') and (rank in ['ADMIN', 'MASTER']):
 		if (message.content.replace(commandPrefix + "add_beatmap ", "") == "" or not(message.content.replace(commandPrefix + "add_beatmap ", "")[0:19] == "https://osu.ppy.sh/")):
-			await client.send_message(message.channel, "Invalid url !")
+			await client.send_message(channel, "Invalid url !")
 		else:
 			pp_100, pp_95, name, combo, stars, diff_params = return_beatmap_infos(message.content.replace(commandPrefix + "add_beatmap ", ""))
 			conn = sqlite3.connect(databasePath)
@@ -307,7 +321,7 @@ async def on_message(message):
 			for beatmapUrl in beatmapToProcess:
 
 				print ("Processing " + beatmapUrl + " - " + str(processed) + "/" + str(len(beatmapToProcess)), end="")
-				cursor.execute("select url from beatmaps where url = '" + beatmapUrl + "'")
+				cursor.execute("select url from beatmaps where url = ?", (beatmapUrl,))
 				if len(cursor.fetchall()) == 0:
 					pp_100, pp_95, name, combo, stars, diff_params = return_beatmap_infos(beatmapUrl, "")
 					if not (pp_100 == -1):
@@ -351,11 +365,11 @@ async def on_message(message):
 				parameter = ''
 			if parameter.lower() in ['on', 'off']:
 				parameter = parameter.lower()
-				cursor.execute("SELECT * FROM muted WHERE serverID = " + str(message.server.id))
+				cursor.execute("SELECT * FROM muted WHERE serverID = ?", (str(message.server.id),))
 				if len(cursor.fetchall()) == 0:
 					cursor.execute("INSERT INTO muted (serverID, state) VALUES (?, ?)", (message.server.id, parameter))
 				else:
-					cursor.execute("UPDATE muted SET state = '" + parameter + "' WHERE serverID = " + str(message.server.id))
+					cursor.execute("UPDATE muted SET state = ? WHERE serverID = ?", (parameter, str(message.server.id)))
 				await client.send_message(message.channel, "Done !")
 				conn.commit()
 			else:
@@ -455,7 +469,7 @@ async def on_message(message):
 	if message.content.startswith(commandPrefix + 'update_pp_stats') and (rank in ['USER', 'ADMIN', 'MASTER']):
 		conn = sqlite3.connect(databasePath)
 		cursor = conn.cursor()
-		cursor.execute("SELECT OsuId FROM users WHERE DiscordId = " + str(message.author.id))
+		cursor.execute("SELECT OsuId FROM users WHERE DiscordId = ?", (str(message.author.id),))
 		osuId = cursor.fetchall()[0][0]
 		conn.close()
 		if not (osuId == None):

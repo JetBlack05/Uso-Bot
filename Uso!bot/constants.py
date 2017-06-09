@@ -2,7 +2,7 @@
 """
 This is a setting file created by Renondedju
 
-Evry Api parameters written in this file are private and secret ! 
+Evry parameters written in this file are private and secret !
 """
 
 class Api:
@@ -10,7 +10,7 @@ class Api:
 	discordToken = "" #Discord bot token (https://discordapp.com/developers/applications/me)
 
 class Paths:
-	workingDirrectory = "" #The full path to OsuBot.py
+	workingDirrectory = "/home/pi/DiscordBots/OsuBot/" #The full path to OsuBot.py
 	beatmapDatabase = workingDirrectory + "Database.db" #Beatmaps database full path
 	beatmapsDownloadsTemp = workingDirrectory + "beatmaps/temp" #Full path to the temporary downloads (unused)
 	beatmapsDownloadsPermanent = workingDirrectory + "beatmaps/permanent" #Full path to the permanants downloads (unused)
@@ -19,6 +19,7 @@ class Paths:
 	helpMasterFile = workingDirrectory + "helpFiles/helpMASTER.txt"
 	helpAdminFile = workingDirrectory + "helpFiles/helpADMIN.txt"
 	helpUserFile = workingDirrectory + "helpFiles/helpUSER.txt"
+	supportFile =  workingDirrectory + "helpFiles/support.txt"
 
 class Settings:
 	commandPrefix = "o!" #Commant prefix required to trigger the bot
