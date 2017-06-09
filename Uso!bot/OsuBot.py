@@ -26,7 +26,6 @@ mainChannel = None
 logsChannel = None
 databasePath = constants.Paths.beatmapDatabase
 
-
 def return_user_rank(discordId):
 	if not discordId == constants.Settings.ownerDiscordId:
 		conn = sqlite3.connect(databasePath)
@@ -177,10 +176,10 @@ async def on_ready():
 	mainChannel = client.get_server(constants.Settings.mainServerID).get_channel(constants.Settings.mainChannelId)
 	logsChannel = client.get_server(constants.Settings.mainServerID).get_channel(constants.Settings.logsChannelId)
 	print('Logged in !')
+	await asyncio.sleep(0.1)
 	hello = False
 	if datetime.now().strftime('%H') == "00" or (set(sys.argv) & set(["refresh"])):
 		message = await client.send_message(mainChannel, "<:empty:317951266355544065> Updating stats ...")
-		await client.change_presence(status=discord.Status('dnd'), game=discord.Game('Osu !'))
 		try:
 			print('Refreshing users stats ...')
 			refresh_all_pp_stats()
@@ -188,15 +187,16 @@ async def on_ready():
 			await client.edit_message(message, "<:check:317951246084341761> Updating stats ... Done !")
 		except:
 			await client.edit_message(message, "<:xmark:317951256889131008> Updating stats ... Fail !")
+		if not set(sys.argv) & set(["dev"]):
+			await client.send_message(mainChannel, "<:online:317951041838514179> Uso!<:Bot:317951180737347587> is now online !")
+			await client.change_presence(status=discord.Status('online'), game=discord.Game(name='Osu !'))
 			hello = True
-		await client.send_message(mainChannel, "<:online:317951041838514179> Uso!<:Bot:317951180737347587> is now online !")
-		await client.change_presence(status=discord.Status('online'), game=discord.Game('Osu !'))
 	print ('Ready !')
 	if (set(sys.argv) & set(["online"])) and hello == False:
 		await client.send_message(mainChannel, "<:online:317951041838514179> Uso!<:Bot:317951180737347587> is now online !")
-		await client.change_presence(status=discord.Status('online'), game=discord.Game('Osu !'))
+		await client.change_presence(status=discord.Status('online'), game=discord.Game(name='Osu !'))
 	if set(sys.argv) & set(["dev"]):
-		await client.change_presence(status=discord.Status('idle'), game=discord.Game('Osu !'))
+		await client.change_presence(status=discord.Status('idle'), game=discord.Game(name='Dev mode'))
  
 @client.event
 async def on_message(message):
@@ -205,6 +205,7 @@ async def on_message(message):
 	rank = 'USER'
 	if message.content.startswith(commandPrefix):
 		rank = return_user_rank(message.author.id)
+		await client.send_message(logsChannel, Log(str(message.author), message.content, 0))
 	channel = message.channel
 	if message.content.startswith(commandPrefix) and message.channel.is_private == False and message.content.startswith(commandPrefix + 'mute') == False:
 		conn = sqlite3.connect(databasePath)
@@ -220,7 +221,6 @@ async def on_message(message):
 		#Hey !
 
 	if (message.content.startswith(commandPrefix + 'recomandation') or message.content.startswith(commandPrefix + 'r')) and (rank in ['USER', 'ADMIN', 'MASTER']):
-		await client.send_message(logsChannel, Log(str(message.author), message.content, 0))
 		conn = sqlite3.connect(databasePath)
 		cursor = conn.cursor()
 		cursor.execute("SELECT ppAverage FROM users WHERE DiscordId = " + str(message.author.id))
@@ -269,7 +269,6 @@ async def on_message(message):
 			await client.send_message(channel, "Uhh sorry, seems like you haven't linked your osu! account...\nPlease use the command *" + commandPrefix + "link_user 'Your osu username' or 'your osu Id'* to link the bot to your osu account !\nEx. " + commandPrefix + "link_user Renondedju")
 
 	if message.content.startswith(commandPrefix + 'add_beatmap') and (rank in ['ADMIN', 'MASTER']):
-		await client.send_message(logsChannel, Log(str(message.author), message.content, 0))
 		if (message.content.replace(commandPrefix + "add_beatmap ", "") == "" or not(message.content.replace(commandPrefix + "add_beatmap ", "")[0:19] == "https://osu.ppy.sh/")):
 			await client.send_message(message.channel, "Invalid url !")
 		else:
@@ -293,7 +292,8 @@ async def on_message(message):
 			beatmapfile = open(message.content.replace(commandPrefix + 'add_beats ', ""), "r")
 			beatmapToProcess = beatmapfile.read().split('\n')
 			await client.send_message(message.channel, "<:streaming:317951088646946826> Starting the import of " + str(len(beatmapToProcess)) + " beatmaps")
-			await client.change_presence(status=discord.Status('dnd'), game=discord.Game(name='Osu !'))
+			await asyncio.sleep(0.1)
+			await client.change_presence(status=discord.Status('dnd'), game=discord.Game(name='Processing ...'))
 
 			conn = sqlite3.connect(databasePath)
 
@@ -305,31 +305,36 @@ async def on_message(message):
 			infoError = 0
 			alreadyExists = 0
 			for beatmapUrl in beatmapToProcess:
-				last_message = await client.send_message(logsChannel, "<:empty:317951266355544065> " + beatmapUrl + " ( " + str(processed) + "/" + str(len(beatmapToProcess))  + " ) ")
-				print ("Processing " + beatmapUrl + " - " + str(processed) + "/" + str(len(beatmapToProcess)), end="")
 
+				print ("Processing " + beatmapUrl + " - " + str(processed) + "/" + str(len(beatmapToProcess)), end="")
 				cursor.execute("select url from beatmaps where url = '" + beatmapUrl + "'")
 				if len(cursor.fetchall()) == 0:
 					pp_100, pp_95, name, combo, stars, diff_params = return_beatmap_infos(beatmapUrl, "")
 					if not (pp_100 == -1):
-						cursor.execute("""INSERT INTO "beatmaps" (url, name, diff_params, pp_100, pp_95, stars, combo, id) VALUES(?, ?, ?, ?, ?, ?, ?, ?)""", (beatmapUrl, name, diff_params, pp_100, pp_95, stars, combo, beatmapUrl.replace("https://osu.ppy.sh/b/", "").replace("&m=0", "")))
-						conn.commit()
-						print (" - Done")
-						await client.edit_message(last_message, "<:check:317951246084341761> " + beatmapUrl + " ( "+str(processed) + "/" + str(len(beatmapToProcess))  +" ) - Done")
-						done += 1
+						try:
+							cursor.execute("""INSERT INTO "beatmaps" (url, name, diff_params, pp_100, pp_95, stars, combo, id) VALUES(?, ?, ?, ?, ?, ?, ?, ?)""", (beatmapUrl, name, diff_params, pp_100, pp_95, stars, combo, beatmapUrl.replace("https://osu.ppy.sh/b/", "").replace("&m=0", "")))
+							conn.commit()
+							print (" - Done")
+							await client.send_message(logsChannel, "<:check:317951246084341761> " + beatmapUrl + " ( "+str(processed) + "/" + str(len(beatmapToProcess))  +" ) - Done")
+							done += 1
+						except sqlite3.IntegrityError:
+							print (" - Can't get beatmap infos !")
+							await client.send_message(logsChannel, "<:xmark:317951256889131008> " + beatmapUrl + " ( "+str(processed) + "/" + str(len(beatmapToProcess))  +" ) - Can't get beatmap infos !")
+							infoError += 1
 					else:
 						print (" - Can't get beatmap infos !")
-						await client.edit_message(last_message, "<:xmark:317951256889131008> " + beatmapUrl + " ( "+str(processed) + "/" + str(len(beatmapToProcess))  +" ) - Can't get beatmap infos !")
+						await client.send_message(logsChannel, "<:xmark:317951256889131008> " + beatmapUrl + " ( "+str(processed) + "/" + str(len(beatmapToProcess))  +" ) - Can't get beatmap infos !")
 						infoError += 1
 				else:
 					print (" - Already exists")
-					await client.edit_message(last_message, "<:xmark:317951256889131008> " + beatmapUrl + " ( "+str(processed) + "/" + str(len(beatmapToProcess))  +" ) - Already exists")
+					await client.send_message(logsChannel, "<:xmark:317951256889131008> " + beatmapUrl + " ( "+str(processed) + "/" + str(len(beatmapToProcess))  +" ) - Already exists")
 					alreadyExists += 1
 				processed += 1
 			conn.close()
 
 			await client.send_message(logsChannel, Log(str(message.author),  "Successfuly added " + str(len(beatmapToProcess)) + " beatmaps to the database", 1))
 			await client.send_message(message.channel, "<:online:317951041838514179> Back online ! - __Done :__ " + str(done) + " , __InfoError :__ " + str(infoError) + " , __Already exists :__ " + str(alreadyExists))
+			await asyncio.sleep(0.1)
 			await client.change_presence(status=discord.Status('online'), game=discord.Game(name='Osu !'))
 
 		else:
@@ -368,7 +373,6 @@ async def on_message(message):
 		except IndexError:
 			oppaiParameters = ""
 
-		await client.send_message(logsChannel, Log(str(message.author), message.content, 0))
 		if (parameters == "" or not(url[0:19] == "https://osu.ppy.sh/")):
 			await client.send_message(channel, "Invalid url !")
 		else:
@@ -396,7 +400,6 @@ async def on_message(message):
 			await client.send_message(message.channel, "Sorry, Only Renondedju can do this !")
 
 	if message.content.startswith(commandPrefix + 'user') and (rank in ['USER', 'ADMIN', 'MASTER']):
-		await client.send_message(logsChannel, Log(str(message.author), message.content, 0))
 		parameters = message.content.split(' ')
 		results = api.get_user(parameters[1])
 		if results == []:
@@ -412,7 +415,6 @@ async def on_message(message):
 			await client.send_message(channel, "User not found!")
 
 	if message.content.startswith(commandPrefix + 'link_user') and (rank in ['USER', 'ADMIN', 'MASTER']):
-		await client.send_message(logsChannel, Log(str(message.author), message.content, 0))
 		parameters = message.content.replace(commandPrefix + 'link_user ', '')
 		try:
 			results = api.get_user(parameters)
@@ -438,7 +440,6 @@ async def on_message(message):
 			await client.send_message(channel, embed=em)
 			if operationDone == "linked":
 				await client.send_message(channel, "Please wait while I'm updating your stats ...")
-				await client.send_message(logsChannel, Log(str(message.author), message.content, 0))
 
 				if update_pp_stats(osuId, message.author.id) == 0:
 					await client.send_message(logsChannel, Log(str(client.user.name), "Successfuly updated " + str(message.author) + "'s pp stats", 0))
@@ -452,7 +453,6 @@ async def on_message(message):
 			await client.send_message(channel, "User not found!")
 
 	if message.content.startswith(commandPrefix + 'update_pp_stats') and (rank in ['USER', 'ADMIN', 'MASTER']):
-		await client.send_message(logsChannel, Log(str(message.author), message.content, 0))
 		conn = sqlite3.connect(databasePath)
 		cursor = conn.cursor()
 		cursor.execute("SELECT OsuId FROM users WHERE DiscordId = " + str(message.author.id))
