@@ -7,6 +7,12 @@ The current command prefix is ``o!``
 
 → ``help`` Show this message
 
+→ ``support`` Show the support message
+
+→ ``status <message> | <status>`` Change the bot's status
+status can be : 'online', 'offline', 'idle', 'do_not_disturb' alias 'dnd', 'invisible'
+➥*ex. o!status Hi evryone ! | online*
+
 → ``add_beatmap <beatmap url>`` Adds a beatmap to the database
 ➥*ex. o!add_beatmap https://osu.ppy.sh/b/1199897&m=0*
 

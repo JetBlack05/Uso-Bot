@@ -7,6 +7,7 @@ Created on Sat May 20 22:39:26 2017
 import discord
 import asyncio
 import sys
+import traceback
 import subprocess
 import sqlite3
 import re
@@ -21,10 +22,17 @@ client = discord.Client()
 commandPrefix = constants.Settings.commandPrefix
 
 api = OsuApi(constants.Api.osuApiKey, connector=ReqConnector())
+LogFile = open(constants.Paths.logsFile, "a")
 
 mainChannel = None
 logsChannel = None
+botOwner = None
 databasePath = constants.Paths.beatmapDatabase
+
+#Colors
+Color_Off='\x1b[0m'
+Red='\x1b[1;31;40m'
+Yellow='\x1b[1;33;40m'
 
 def return_user_rank(discordId):
 	if not discordId == constants.Settings.ownerDiscordId:
@@ -150,32 +158,61 @@ def get_infos(row_datas):
 		pp = name = combo = stars = diff_params = -1
 		return pp, name, combo, stars, diff_params
 
-def Log(user, message, logLevel):
-	if logLevel == 0:
-		logLevel = "INFO : "
-		discordLogLevel = "INFO : "
-	elif logLevel == 1:
-		logLevel = "! WARNING : "
-		discordLogLevel = "**WARNING : **"
-	else:
-		logLevel = "!! ERROR : "
-		discordLogLevel = "__**ERROR : **__"
-	i = datetime.now()
-	date = i.strftime('%Y/%m/%d %H:%M:%S')
-	LogFile = open(constants.Paths.logsFile, "a")
+async def Log(message, logLevel=0, content=""):
 
-	fileOutput = str(logLevel) + str(date) + " -" + str(user) + " : " + str(message)
-	LogFile.write(fileOutput + "\n")
-	discordOutput = str(discordLogLevel) + str(date) + " -" + str(user) + " : " + str(message)
-	LogFile.close()
-	return discordOutput
+	if logLevel == 1:
+		LogPrefix = "**WARNING : **"
+		LogColor=discord.Colour.gold()
+		print (Yellow + LogPrefix + message.author.name + " : " + message.content + Color_Off)
+	elif logLevel == 2:
+		LogPrefix = "__**ERROR : **__"
+		LogColor=discord.Colour.red()
+		print (Red + LogPrefix + message.author.name + " : " + message.content + Color_Off)
+	else:
+		LogPrefix = ""
+		LogColor=discord.Colour.default()
+		print (LogPrefix + message.author.name + " : " + message.content)
+
+	date = datetime.now().strftime('%Y/%m/%d %H:%M:%S')
+
+	if content == "":
+		fileOutput = str(logLevel) + str(date) + " -" + str(message.author.name) + " : " + str(message.content)
+		LogFile.write(fileOutput + "\n")
+
+		logEmbed = discord.Embed(description =  LogPrefix + str(message.channel) + " : " + message.content, colour=LogColor)
+		logEmbed.set_footer(text=date)
+		logEmbed.set_author(name = str(message.author.name), icon_url ="https://cdn.discordapp.com/avatars/"+str(message.author.id)+"/"+message.author.avatar+".png")
+
+		if logLevel == 2:
+			await client.send_message(botOwner, embed=logEmbed)
+
+		await client.send_message(logsChannel, embed=logEmbed)
+	else:
+
+		fileOutput = str(logLevel) + str(date) + " -" + str(message.author.name) + " : " + str(message.content)
+		LogFile.write(fileOutput + "\n")
+
+		logEmbed = discord.Embed(description=content, colour=LogColor)
+		logEmbed.set_footer(text=date)
+		logEmbed.set_author(name = str(message.author.name), icon_url ="https://cdn.discordapp.com/avatars/"+str(message.author.id)+"/"+message.author.avatar+".png")
+
+		if logLevel == 2:
+			await client.send_message(botOwner, embed=logEmbed)
+
+		await client.send_message(logsChannel, embed=logEmbed)
 
 @client.event
 async def on_ready():
-	global mainChannel, logsChannel, visible, databasePath
+	global mainChannel, logsChannel, visible, databasePath, botOwner
 	mainChannel = client.get_server(constants.Settings.mainServerID).get_channel(constants.Settings.mainChannelId)
 	logsChannel = client.get_server(constants.Settings.mainServerID).get_channel(constants.Settings.logsChannelId)
 	print('Logged in !')
+
+	for channel in client.private_channels:
+		if str(channel.user) == "Renondedju#0204":
+			botOwner = channel.user
+			break
+
 	await asyncio.sleep(0.1)
 	hello = False
 	if datetime.now().strftime('%H') == "00" or (set(sys.argv) & set(["refresh"])):
@@ -200,12 +237,13 @@ async def on_ready():
  
 @client.event
 async def on_message(message):
-	global api, visible
+	global api, visible, LogFile
 
 	rank = 'USER'
 	if message.content.startswith(commandPrefix):
 		rank = return_user_rank(message.author.id)
-		await client.send_message(logsChannel, Log(str(message.author), message.content, 0))
+		await Log(message, 0)
+
 	channel = message.channel
 	if message.content.startswith(commandPrefix) and message.channel.is_private == False and message.content.startswith(commandPrefix + 'mute') == False:
 		conn = sqlite3.connect(databasePath)
@@ -219,6 +257,11 @@ async def on_message(message):
 	if message.content.startswith(commandPrefix + 'test') and (rank in ['MASTER']):
 		await client.send_message(message.channel, "Hi ! " + str(message.author) + " my command prefix is '" + commandPrefix + "'")
 		#Hey !
+
+	if message.content.startswith(commandPrefix + 'log') and (rank in ['MASTER']):
+		await Log(message, 0)
+		await Log(message, 1)
+		await Log(message, 2)
 
 	if message.content.startswith(commandPrefix + 'status') and (rank in ['ADMIN', 'MASTER']):
 		parameters = message.content.replace(commandPrefix + 'status ', "")
@@ -255,7 +298,7 @@ async def on_message(message):
 				if alreadyRecomendedId == None:
 					alreadyRecomendedId = "00000"
 
-				cursor.execute("Select * from beatmaps where pp_95 >= ? and pp_95 <= ? and id not in (?) Limit 1", (str(pp_average-pp_average_fluctuation), str(pp_average+pp_average_fluctuation), alreadyRecomendedId ))
+				cursor.execute("Select * from beatmaps where pp_95 >= ? and pp_95 <= ? and id not in (" + alreadyRecomendedId + ") Limit 1", (str(pp_average-pp_average_fluctuation), str(pp_average+pp_average_fluctuation)))
 
 				recomendedBeatmap = cursor.fetchall()[0]
 				url = recomendedBeatmap[0]
@@ -394,7 +437,7 @@ async def on_message(message):
 			
 			if not(pp_100 == -1):
 
-				add_beatmap_to_queue(url)
+				#add_beatmap_to_queue(url)
 				await client.send_message(client.get_server("310348632094146570").get_channel("315166181256593418"), Log(str(client.user.name), "Added " + url + " to beatmap queue", 0))
 				description = "__100% pp__ : " + str(pp_100) + "\n" + "__95% pp__ : " + str(pp_95) + "\n" + "__combo max__ : " + str(combo) + "\n" + "__stars__ : " + str(stars) + "\n" + str("*" + diff_params + "*")
 				em = discord.Embed(title=str(name), description=description, colour=0xf44242)
@@ -408,6 +451,7 @@ async def on_message(message):
 			await client.send_message(message.channel, "Alright, killing myself ... bye everyone !")
 			client.logout()
 			client.close()
+			LogFile.close()
 			sys.exit("Bot has been shutdown by command correctly !")
 		else:
 			await client.send_message(logsChannel, Log(str(message.author), "tried to kill the bot !", 1))
@@ -503,5 +547,23 @@ async def on_message(message):
 			helpString = helpfile.read()
 			helpfile.close()
 			await client.send_message(channel, helpString)
+
+@client.event
+async def on_error(event, *args, **kwargs):
+	message = args[0]
+
+	channel = message.channel
+	if message.content.startswith(commandPrefix) and message.channel.is_private == False and message.content.startswith(commandPrefix + 'mute') == False:
+		conn = sqlite3.connect(databasePath)
+		cursor = conn.cursor()
+		cursor.execute("SELECT state FROM muted WHERE serverID = ?", (str(message.server.id),))
+		if cursor.fetchall()[0][0] == 'on':
+			channel = message.author
+		else:
+			channel = message.channel
+
+	print (Red + traceback.format_exc() + Color_Off)
+	await Log(message, content = "Message:\n" + message.content + "\n\n" + traceback.format_exc(), logLevel=2)
+	await client.send_message(channel, "Oops ! Unexpected error :/\nGo to my personal server to ask for some help if needed !\nhttps://discordapp.com/invite/mEeMPyK")
 
 client.run(constants.Api.discordToken)

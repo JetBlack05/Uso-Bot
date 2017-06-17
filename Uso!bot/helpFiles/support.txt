@@ -1,7 +1,7 @@
-Hey ! Wanna help us ?
+﻿Hey ! Wanna help us ?
 
 •You can come to the dev server here to report bugs or simply give your ideas : https://discordapp.com/invite/mEeMPyK
 
 •Help us adding some more beatmaps with osu!scan (channel #osu_scan on the server) : https://github.com/Renondedju/Osu-scan
 
-•Improve the algorythm of the bot ? : https://github.com/Renondedju/Uso-Bot
+•Improve the algorithm of the bot ? : https://github.com/Renondedju/Uso-Bot

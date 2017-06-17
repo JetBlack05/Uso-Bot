@@ -7,6 +7,8 @@ The current command prefix is ``o!``
 
 → ``help`` Show this message
 
+→ ``support`` Show the support message
+
 → ``r`` or ``recommend`` Automatically recommend you a beatmap based on your average amount of pp
 ➥*ex. o!recommend*
 
