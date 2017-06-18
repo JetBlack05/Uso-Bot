@@ -20,6 +20,7 @@ class Paths:
 	helpAdminFile = workingDirrectory + "helpFiles/helpADMIN.txt"
 	helpUserFile = workingDirrectory + "helpFiles/helpUSER.txt"
 	supportFile =  workingDirrectory + "helpFiles/support.txt"
+	backupDirrectory = workingDirrectory + "DatabaseBackup/"
 
 class Settings:
 	commandPrefix = "o!" #Commant prefix required to trigger the bot

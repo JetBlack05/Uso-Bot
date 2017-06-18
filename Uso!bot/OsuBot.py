@@ -10,6 +10,7 @@ import sys
 import traceback
 import subprocess
 import sqlite3
+import os
 import re
 from datetime import datetime
 from osuapi import OsuApi, ReqConnector
@@ -158,6 +159,20 @@ def get_infos(row_datas):
 		pp = name = combo = stars = diff_params = -1
 		return pp, name, combo, stars, diff_params
 
+def create_backup():
+	os.system("cp " + constants.Paths.beatmapDatabase + " " + constants.Paths.backupDirrectory + "DatabaseBackup_"+datetime.now().strftime('%Y-%m-%d_%H:%M:%S')+".db")
+	files = os.listdir(constants.Paths.backupDirrectory)
+	files.sort()
+	if (len(files)>10):
+		os.system("rm " + constants.Paths.backupDirrectory + files[0])
+
+async def User_embed(channel, username = "Test", pp="1000", worldRank = "1", localRank = "1", country = "fr", playcount = "10000", level = "100", osuId = "7418575", totalScore = "15105810824020", ranckedScore="8648428841842", accuracy="99.03%"):
+	embed = discord.Embed(title=username + " stats (" + country.upper() + ")")
+	embed.set_thumbnail(url="https://a.ppy.sh/" + osuId)
+	embed.add_field(name="General", value="__Performance:__ **" + pp + "pp\n:map:#" + worldRank + " :flag_"+ country.lower() +":#"+ localRank + "**\n__Playcount :__ **" + playcount + "**\n__Level :__ **" + level + "**\n__Accuracy :__ **" + accuracy + "**", inline=True)
+	embed.add_field(name="ᅠ", value="[Profile](https://osu.ppy.sh/users/" + osuId + ") / [Osu!Track](https://ameobea.me/osutrack/user/" + username + ") / [PP+](https://syrin.me/pp+/u/"+username+") / [Osu!Chan](https://syrin.me/osuchan/u/" + username + ")\n__Total score :__ **"+totalScore+"**\n__Rancked score :__ **" + ranckedScore + "**", inline=True)
+	await client.send_message(channel, embed=embed)
+
 async def Log(message, logLevel=0, content=""):
 
 	if logLevel == 1:
@@ -221,6 +236,9 @@ async def on_ready():
 			print('Refreshing users stats ...')
 			refresh_all_pp_stats()
 			print(" - Done")
+			print('Creating new backup ...', end="")
+			create_backup()
+			print(" Done !")
 			await client.edit_message(message, "<:check:317951246084341761> Updating stats ... Done !")
 		except:
 			await client.edit_message(message, "<:xmark:317951256889131008> Updating stats ... Fail !")
@@ -256,7 +274,12 @@ async def on_message(message):
 
 	if message.content.startswith(commandPrefix + 'test') and (rank in ['MASTER']):
 		await client.send_message(message.channel, "Hi ! " + str(message.author) + " my command prefix is '" + commandPrefix + "'")
+		await User_embed(channel)
 		#Hey !
+
+	if message.content.startswith(commandPrefix + 'backup') and (rank in ['MASTER']):
+		create_backup()
+		await client.send_message(channel, "Backup done")
 
 	if message.content.startswith(commandPrefix + 'log') and (rank in ['MASTER']):
 		await Log(message, 0)
@@ -466,9 +489,7 @@ async def on_message(message):
 		if not (results == []):
 			for item in results[0]:
 				stats.append(item)
-			description = "Accuracy: " + str(stats[0][1])[0:4] + "\npp: " + str(stats[13][1]) + "\nCountry: " + stats[7][1] + "\nLevel: " + str(stats[9][1])[0:4] + "\nPlays: " + str(stats[10][1]) + "\nRank: " + str(stats[12][1]) + "\nCountry rank: " + str(stats[11][1])
-			em = discord.Embed(title=str(stats[17][1]), description=description, colour=0xf44242, url="https://new.ppy.sh/u/" + str(stats[16][1]) + "#osu").set_footer(text="https://new.ppy.sh/u/" + str(stats[16][1]) + "#osu")
-			await client.send_message(channel, embed=em)
+			await User_embed(channel, username=str(stats[17][1]), pp=str(stats[13][1]), worldRank=str(stats[12][1]), localRank=str(stats[11][1]), country=stats[7][1], playcount=str(stats[10][1]), level=str(stats[9][1]), osuId = str(stats[16][1]), totalScore = str(stats[15][1]), ranckedScore = str(stats[14][1]), accuracy = str(stats[0][1])[0:4]+"%" )
 		else:
 			await client.send_message(channel, "User not found!")
 
@@ -490,24 +511,22 @@ async def on_message(message):
 			osuUsername = stats[17][1]
 			userDiscordId = int(message.author.id)
 			operationDone = link_user(userDiscordId, osuUsername, osuId, "USER")
-			description = "Accuracy: " + str(stats[0][1])[0:4] + "\npp: " + str(stats[13][1]) + "\nCountry: " + stats[7][1] + "\nLevel: " + str(stats[9][1])[0:4] + "\nPlays: " + str(stats[10][1]) + "\nRank: " + str(stats[12][1]) + "\nCountry rank: " + str(stats[11][1])
-			em = discord.Embed(title=str(stats[17][1]), description=description, colour=0xf44242, url="https://new.ppy.sh/u/" + str(stats[16][1]) + "#osu").set_footer(text="https://new.ppy.sh/u/" + str(stats[16][1]) + "#osu")
 
 			await client.send_message(channel, "Your account has been successfuly " + operationDone + " to ")
-			await client.send_message(logsChannel, Log(str(client.user.name), "Your account has been successfuly " + operationDone + " to osu! username '" + stats[17][1] + "'", 0))
-			await client.send_message(channel, embed=em)
+			#await Log(message, logLevel=0, content="Account linked")
+			await User_embed(channel, username=str(stats[17][1]), pp=str(stats[13][1]), worldRank=str(stats[12][1]), localRank=str(stats[11][1]), country=stats[7][1], playcount=str(stats[10][1]), level=str(stats[9][1]), osuId = str(stats[16][1]), totalScore = str(stats[15][1]), ranckedScore = str(stats[14][1]), accuracy = str(stats[0][1])[0:4]+"%" )
 			if operationDone == "linked":
 				await client.send_message(channel, "Please wait while I'm updating your stats ...")
 
 				if update_pp_stats(osuId, message.author.id) == 0:
-					await client.send_message(logsChannel, Log(str(client.user.name), "Successfuly updated " + str(message.author) + "'s pp stats", 0))
+					#await client.send_message(logsChannel, Log(str(client.user.name), "Successfuly updated " + str(message.author) + "'s pp stats", 0))
 					await client.send_message(channel, "Successfuly updated " + str(message.author) + "'s pp stats")
 
 				else:
-					await client.send_message(logsChannel, Log(str(client.user.name), "Unexpected error for " + str(message.author), 2))
+					#await client.send_message(logsChannel, Log(str(client.user.name), "Unexpected error for " + str(message.author), 2))
 					await client.send_message(channel, "Unexpected error, please try again later or contact Renondedju for more help")
 		else:
-			await client.send_message(logsChannel, Log(str(client.user.name), "User not found", 0))
+			#await client.send_message(logsChannel, Log(str(client.user.name), "User not found", 0))
 			await client.send_message(channel, "User not found!")
 
 	if message.content.startswith(commandPrefix + 'update_pp_stats') and (rank in ['USER', 'ADMIN', 'MASTER']):
