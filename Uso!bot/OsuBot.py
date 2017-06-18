@@ -44,7 +44,6 @@ def return_user_rank(discordId):
 			rank = cursor.fetchall()[0][0]
 		except IndexError:
 			rank = 'USER'
-		print (rank)
 		conn.close()
 		if rank == "":
 			rank = "USER"
@@ -166,14 +165,30 @@ def create_backup():
 	if (len(files)>10):
 		os.system("rm " + constants.Paths.backupDirrectory + files[0])
 
-async def User_embed(channel, username = "Test", pp="1000", worldRank = "1", localRank = "1", country = "fr", playcount = "10000", level = "100", osuId = "7418575", totalScore = "15105810824020", ranckedScore="8648428841842", accuracy="99.03%"):
+async def send_big_message(channel, message):
+	message = message.split("\n")
+	finalMessage = ""
+	for line in message:
+		if len(line) + len(finalMessage) < 2000:
+			finalMessage += line + '\n'
+		else:
+			await client.send_message(channel, finalMessage)
+			finalMessage = ""
+	if finalMessage != "":
+		await client.send_message(channel, finalMessage)
+
+async def User_embed(channel, username = "Test", pp="1000", rank_SS = "54258", rank_S = "5421", rank_A = "5412", worldRank = "1", localRank = "1", country = "fr", playcount = "10000", level = "100", osuId = "7418575", totalScore = "15105810824020", ranckedScore="8648428841842", accuracy="99.03%", hit_300="532454", hit_100="5324", hit_50="504"):
+
 	embed = discord.Embed(title=username + " stats (" + country.upper() + ")")
 	embed.set_thumbnail(url="https://a.ppy.sh/" + osuId)
 	embed.add_field(name="General", value="__Performance:__ **" + pp + "pp\n:map:#" + worldRank + " :flag_"+ country.lower() +":#"+ localRank + "**\n__Playcount :__ **" + playcount + "**\n__Level :__ **" + level + "**\n__Accuracy :__ **" + accuracy + "**", inline=True)
 	embed.add_field(name="ᅠ", value="[Profile](https://osu.ppy.sh/users/" + osuId + ") / [Osu!Track](https://ameobea.me/osutrack/user/" + username + ") / [PP+](https://syrin.me/pp+/u/"+username+") / [Osu!Chan](https://syrin.me/osuchan/u/" + username + ")\n__Total score :__ **"+totalScore+"**\n__Rancked score :__ **" + ranckedScore + "**", inline=True)
+	embed.add_field(name="Hits (300/100/50)", value="**" + hit_300 + "//" + hit_100 + "//" + hit_50 + "**", inline=True)
+	embed.add_field(name="Ranks (SS/S/A)", value="**" + rank_SS + "//" + rank_S + "//" + rank_A + "**", inline=True)
+
 	await client.send_message(channel, embed=embed)
 
-async def Log(message, logLevel=0, content=""):
+async def Log(message, logLevel=0, content="", rank="USER"):
 
 	if logLevel == 1:
 		LogPrefix = "**WARNING : **"
@@ -188,15 +203,18 @@ async def Log(message, logLevel=0, content=""):
 		LogColor=discord.Colour.default()
 		print (LogPrefix + message.author.name + " : " + message.content)
 
-	date = datetime.now().strftime('%Y/%m/%d %H:%M:%S')
+	date = datetime.now().strftime('%Y/%m/%d at %H:%M:%S')
 
 	if content == "":
 		fileOutput = str(logLevel) + str(date) + " -" + str(message.author.name) + " : " + str(message.content)
 		LogFile.write(fileOutput + "\n")
 
-		logEmbed = discord.Embed(description =  LogPrefix + str(message.channel) + " : " + message.content, colour=LogColor)
+		logEmbed = discord.Embed(description = LogPrefix + str(message.channel) + " : " + message.content, colour=LogColor)
 		logEmbed.set_footer(text=date)
-		logEmbed.set_author(name = str(message.author.name), icon_url ="https://cdn.discordapp.com/avatars/"+str(message.author.id)+"/"+message.author.avatar+".png")
+		if message.author.avatar == None:
+			logEmbed.set_author(name = str(message.author.name) + " - " + str(rank))
+		else:
+			logEmbed.set_author(name = str(message.author.name) + " - " + str(rank), icon_url ="https://cdn.discordapp.com/avatars/"+str(message.author.id)+"/"+message.author.avatar+".png")
 
 		if logLevel == 2:
 			await client.send_message(botOwner, embed=logEmbed)
@@ -260,7 +278,7 @@ async def on_message(message):
 	rank = 'USER'
 	if message.content.startswith(commandPrefix):
 		rank = return_user_rank(message.author.id)
-		await Log(message, 0)
+		await Log(message, 0, rank=rank)
 
 	channel = message.channel
 	if message.content.startswith(commandPrefix) and message.channel.is_private == False and message.content.startswith(commandPrefix + 'mute') == False:
@@ -484,12 +502,15 @@ async def on_message(message):
 		parameters = message.content.split(' ')
 		results = api.get_user(parameters[1])
 		if results == []:
-			results = api.get_user(int(parameters[1]))
+			try:
+				results = api.get_user(int(parameters[1]))
+			except ValueError:
+				await client.send_message(channel, "User not found!")
 		stats = []
 		if not (results == []):
 			for item in results[0]:
 				stats.append(item)
-			await User_embed(channel, username=str(stats[17][1]), pp=str(stats[13][1]), worldRank=str(stats[12][1]), localRank=str(stats[11][1]), country=stats[7][1], playcount=str(stats[10][1]), level=str(stats[9][1]), osuId = str(stats[16][1]), totalScore = str(stats[15][1]), ranckedScore = str(stats[14][1]), accuracy = str(stats[0][1])[0:4]+"%" )
+			await User_embed(channel, username=str(stats[17][1]), rank_SS=str(stats[6][1]), rank_S=str(stats[5][1]), rank_A=str(stats[4][1]) , pp=str(stats[13][1]), worldRank=str(stats[12][1]), localRank=str(stats[11][1]), country=stats[7][1], playcount=str(stats[10][1]), level=str(stats[9][1]), osuId = str(stats[16][1]), totalScore = str(stats[15][1]), ranckedScore = str(stats[14][1]), accuracy = str(stats[0][1])[0:4]+"%", hit_300 = str(stats[2][1]), hit_100 = str(stats[1][1]), hit_50 = str(stats[3][1]))
 		else:
 			await client.send_message(channel, "User not found!")
 
@@ -555,17 +576,17 @@ async def on_message(message):
 			helpfile = open(constants.Paths.helpAdminFile, "r")
 			helpString = helpfile.read()
 			helpfile.close()
-			await client.send_message(channel, helpString)
+			await send_big_message(channel, helpString)
 		elif rank == 'MASTER':
 			helpfile = open(constants.Paths.helpMasterFile, "r")
 			helpString = helpfile.read()
 			helpfile.close()
-			await client.send_message(channel, helpString)
+			await send_big_message(channel, helpString)
 		else:
 			helpfile = open(constants.Paths.helpUserFile, "r")
 			helpString = helpfile.read()
 			helpfile.close()
-			await client.send_message(channel, helpString)
+			await send_big_message(channel, helpString)
 
 @client.event
 async def on_error(event, *args, **kwargs):
@@ -582,7 +603,7 @@ async def on_error(event, *args, **kwargs):
 			channel = message.channel
 
 	print (Red + traceback.format_exc() + Color_Off)
-	await Log(message, content = "Message:\n" + message.content + "\n\n" + traceback.format_exc(), logLevel=2)
+	await Log(message, content = "Message:\n" + message.content + "\n\n```" + traceback.format_exc() + "```", logLevel=2)
 	await client.send_message(channel, "Oops ! Unexpected error :/\nGo to my personal server to ask for some help if needed !\nhttps://discordapp.com/invite/mEeMPyK")
 
 client.run(constants.Api.discordToken)
