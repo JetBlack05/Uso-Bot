@@ -1,45 +1,58 @@
 ﻿▬▬▬**Help for 'ADMINS' commands**▬▬▬
 
-Uso! <:Bot:317951180737347587> is an osu! bot made by Renondedju!
-If you encounter any problem, please ask for some help here! https://discordapp.com/invite/mEeMPyK
+Uso! <:Bot:317951180737347587> is an osu bot made by Renondedju !
+If there is any problems, ask him some more help here ! https://discordapp.com/invite/mEeMPyK
 
 The current command prefix is ``o!``
 
-→ ``help`` Show this message
+	➥ ``help`` Show this message
 
-→ ``support`` Show the support message
+	➥ ``support`` Show the support message
 
-→ ``status <message> | <status>`` Change the bot's status
+	➥ ``status <message> | <status>`` Change the bot's status
 status can be : 'online', 'offline', 'idle', 'do_not_disturb' alias 'dnd', 'invisible'
-➥*ex. o!status Hi evryone ! | online*
+→*ex. o!status Hi evryone ! | online*
 
-→ ``add_beatmap <beatmap url>`` Adds a beatmap to the database
-➥*ex. o!add_beatmap https://osu.ppy.sh/b/1199897&m=0*
+	➥ ``test`` Tests the bot
+→*ex. o!test*
 
-→ ``r`` or ``recommend`` Automatically recommend you a beatmap based on your average amount of pp
-➥*ex. o!recommend*
+	➥ ``r`` or ``recommend`` Automatically recommend you a beatmap based on your average amount of pp
+→*ex. o!recommend*
 
-→ ``user <osu username or osu id>`` Displays user stats (osu! mode)
-➥*ex. o!user Renondedju*
+	➥ ``user <your osu username> <mode>`` Displays user stats
 
-→ ``pp <beatmap url> +<mods>`` Beatmap stats analyser (osu! mode)
-➥*ex. o!pp https://osu.ppy.sh/b/1199897&m=0 +HDDT*
+• ``<Your osu username>`` can also be replaced with :
+- your osu id (ex: ``7418575``)
+- your osu user url *(ex: ``https://osu.ppy.sh/users/7418575``)*
+- ``me`` if you linked your osu account with the bot (``o!link_user <your osu username/id>``)
 
-→ ``mute <'on' or 'off'>`` **admins only** allows the bot to chat in the server or not *(if not the bot will answer in pm)*
-➥*ex. o!mute on*
+• ``<mode>`` can be : ``osu``, ``ctb``, ``mania`` and ``taiko``
+- If no mode is precised, the bot will automaticly return the Osu!standard mode stats
+→*ex. o!user https://osu.ppy.sh/users/7418575 ctb*
 
-→ ``link_user <osu username or osu id>`` Link your discord account to an osu! account (requiered for ``r`` and ``update_pp_stats``)
-➥*ex. o!link_user Renondedju*
 
-→ ``update_pp_stats`` Updates your osu! pp stats *- use this if you have just done a really good score -* (this command is run automatically once every day for everyone)
-➥*ex. o!update_pp_stats*
+	➥ ``pp <beatmap url> +<mods>`` Beatmap stats analyser (osu! mode)
+→*ex. o!pp https://osu.ppy.sh/b/1199897&m=0 +HDDT*
+
+	➥ ``mute <'on' or 'off'>`` **admins only** allows the bot to chat in the server or not *(if not the bot will answer in pm)*
+→*ex. o!mute on*
+
+	➥ ``add_beatmap <beatmap url>`` Adds a beatmap to the database
+→*ex. o!add_beatmap https://osu.ppy.sh/b/1199897&m=0*
+
+	➥ ``link_user <osu username or osu id>`` Link your discord account to an osu! account (requiered for ``r`` and ``update_pp_stats``)
+→*ex. o!link_user Renondedju*
+
+	➥ ``update_pp_stats`` Updates your osu! pp stats *- use this if you have just done a really good score -* (this command is run automatically once every day for everyone)
+→*ex. o!update_pp_stats*
 
 ▬▬▬ Status ▬▬▬
 
 Look at the little circle on my profile !
-*<:dnd:317951077582503939> means* : Currently processing beatmaps or booting, just wait a bit
-*<:away:317951063682711556> means* : Currently in developement, you can use me but I might be unstable and act weird
-*<:offline:317951122243452938> means* : Offline
-*<:online:317951041838514179> means* : Up and running
+
+*The symbol <:dnd:317951077582503939> means* : I'm actually processing beatmaps or booting. Just wait a bit
+*The symbol <:away:317951063682711556> means* : I'm currently in developement, you can use me but i'm not verry stable and i can act oddly
+*The symbol <:offline:317951122243452938> means* : Simply offline
+*The symbol <:online:317951041838514179> means* : Simply up and running !
 
 Git : https://github.com/Renondedju/Uso-Bot

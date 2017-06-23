@@ -13,7 +13,7 @@ import sqlite3
 import os
 import re
 from datetime import datetime
-from osuapi import OsuApi, ReqConnector
+from osuapi import OsuApi, ReqConnector, OsuMode
 import requests
 import constants
 
@@ -165,6 +165,49 @@ def create_backup():
 	if (len(files)>10):
 		os.system("rm " + constants.Paths.backupDirrectory + files[0])
 
+def get_user(user = "", mode = OsuMode.osu, discordId = 0):
+
+	if type(mode) == str:
+		if mode == "taiko":
+			mode = OsuMode.taiko
+		elif mode == "ctb":
+			mode = OsuMode.ctb
+		elif mode == "mania":
+			mode = OsuMode.mania
+		else:
+			mode = OsuMode.osu
+
+	if user == "me":
+
+		conn = sqlite3.connect(databasePath)
+		cursor = conn.cursor()
+		cursor.execute("SELECT OsuId FROM users WHERE discordId = ?", (str(discordId),))
+		osuId = cursor.fetchall()[0][0]
+		results = api.get_user(osuId, mode=mode)
+	else:
+
+		user = user.replace("https://osu.ppy.sh/u/", "")
+		user = user.replace("https://osu.ppy.sh/users/", "")
+		try:
+			user = int(user)
+		except ValueError:
+			user = str(user) #Just to fill
+		results = api.get_user(user, mode=mode)
+
+	return results
+
+async def user(channel, mode = "osu", user = "", discordId = 0):
+	results = get_user(user = user, mode = mode, discordId = discordId)
+	if results == []:
+		await client.send_message(channel, "Oups sorry, didn't find this user\n*Try with your osu id instead or the link to your profile*")
+	else :
+		stats = []
+		for item in results[0]:
+			#print (str(len(stats)) + " - ", end="")
+			#print (item)
+			stats.append(item)
+		await User_embed(channel, mode=mode, username=str(stats[17][1]), rank_SS=str(stats[6][1]), rank_S=str(stats[5][1]), rank_A=str(stats[4][1]) , pp=str(stats[13][1]), worldRank=str(stats[12][1]), localRank=str(stats[11][1]), country=stats[7][1], playcount=str(stats[10][1]), level=str(stats[9][1]), osuId = str(stats[16][1]), totalScore = str(stats[15][1]), ranckedScore = str(stats[14][1]), accuracy = str(stats[0][1])[0:4]+"%", hit_300 = str(stats[2][1]), hit_100 = str(stats[1][1]), hit_50 = str(stats[3][1]))
+
 async def send_big_message(channel, message):
 	message = message.split("\n")
 	finalMessage = ""
@@ -173,43 +216,56 @@ async def send_big_message(channel, message):
 			finalMessage += line + '\n'
 		else:
 			await client.send_message(channel, finalMessage)
-			finalMessage = ""
+			finalMessage = line + '\n'
 	if finalMessage != "":
 		await client.send_message(channel, finalMessage)
 
-async def User_embed(channel, username = "Test", pp="1000", rank_SS = "54258", rank_S = "5421", rank_A = "5412", worldRank = "1", localRank = "1", country = "fr", playcount = "10000", level = "100", osuId = "7418575", totalScore = "15105810824020", ranckedScore="8648428841842", accuracy="99.03%", hit_300="532454", hit_100="5324", hit_50="504"):
+async def User_embed(channel, mode = "osu" ,username = "Test", pp="1000", rank_SS = "54258", rank_S = "5421", rank_A = "5412", worldRank = "1", localRank = "1", country = "fr", playcount = "10000", level = "100", osuId = "7418575", totalScore = "15105810824020", ranckedScore="8648428841842", accuracy="99.03%", hit_300="532454", hit_100="5324", hit_50="504"):
 
-	embed = discord.Embed(title=username + " stats (" + country.upper() + ")")
+	if mode not in ['osu', 'taiko', 'mania', 'ctb']:
+		mode = 'osu'
+
+	embed = discord.Embed(title = "- " + username + " - stats")
 	embed.set_thumbnail(url="https://a.ppy.sh/" + osuId)
-	embed.add_field(name="General", value="__Performance:__ **" + pp + "pp\n:map:#" + worldRank + " :flag_"+ country.lower() +":#"+ localRank + "**\n__Playcount :__ **" + playcount + "**\n__Level :__ **" + level + "**\n__Accuracy :__ **" + accuracy + "**", inline=True)
-	embed.add_field(name="ᅠ", value="[Profile](https://osu.ppy.sh/users/" + osuId + ") / [Osu!Track](https://ameobea.me/osutrack/user/" + username + ") / [PP+](https://syrin.me/pp+/u/"+username+") / [Osu!Chan](https://syrin.me/osuchan/u/" + username + ")\n__Total score :__ **"+totalScore+"**\n__Rancked score :__ **" + ranckedScore + "**", inline=True)
-	embed.add_field(name="Hits (300/100/50)", value="**" + hit_300 + "//" + hit_100 + "//" + hit_50 + "**", inline=True)
-	embed.add_field(name="Ranks (SS/S/A)", value="**" + rank_SS + "//" + rank_S + "//" + rank_A + "**", inline=True)
+	if level == "None":
+		embed.add_field(name = "Oops !", value="This user haven't played yet in this mode :/")
+	else:
+		embed.add_field(name="General", value="__Performance:__ **" + pp + "pp\n:map:#" + worldRank + " :flag_"+ country.lower() +":#"+ localRank + "**\n__Playcount :__ **" + playcount + "**\n__Level :__ **" + level + "**\n__Accuracy :__ **" + accuracy + "**", inline=True)
+		embed.add_field(name="ᅠ", value="[Profile](https://osu.ppy.sh/users/" + osuId + ") / [Osu!Track](https://ameobea.me/osutrack/user/" + username + ") / [PP+](https://syrin.me/pp+/u/"+username+") / [Osu!Chan](https://syrin.me/osuchan/u/" + username + ")\n__Total score :__ **"+totalScore+"**\n__Rancked score :__ **" + ranckedScore + "**", inline=True)
+		embed.add_field(name="Hits (300/100/50)", value="**" + hit_300 + "//" + hit_100 + "//" + hit_50 + "**", inline=True)
+		embed.add_field(name="Ranks (SS/S/A)", value="**" + rank_SS + "//" + rank_S + "//" + rank_A + "**", inline=True)
+	embed.set_footer(icon_url="https://raw.githubusercontent.com/Lemmmy/osusig/master/img/" + mode +".png", text="Results for " + mode + " mode")
 
 	await client.send_message(channel, embed=embed)
 
-async def Log(message, logLevel=0, content="", rank="USER"):
+async def Log(message, logLevel=0, content="", rank="USER", thumbnailUrl = ""):
 
 	if logLevel == 1:
 		LogPrefix = "**WARNING : **"
 		LogColor=discord.Colour.gold()
 		print (Yellow + LogPrefix + message.author.name + " : " + message.content + Color_Off)
+		print (Yellow + content + Color_Off)
 	elif logLevel == 2:
 		LogPrefix = "__**ERROR : **__"
 		LogColor=discord.Colour.red()
 		print (Red + LogPrefix + message.author.name + " : " + message.content + Color_Off)
+		print (Red + content + Color_Off)
 	else:
 		LogPrefix = ""
 		LogColor=discord.Colour.default()
 		print (LogPrefix + message.author.name + " : " + message.content)
+		print (content)
 
 	date = datetime.now().strftime('%Y/%m/%d at %H:%M:%S')
 
 	if content == "":
 		fileOutput = str(logLevel) + str(date) + " -" + str(message.author.name) + " : " + str(message.content)
 		LogFile.write(fileOutput + "\n")
+		if message.channel.is_private :
+			logEmbed = discord.Embed(description = LogPrefix + str(message.channel) + " : " + message.content, colour=LogColor)
+		else:
+			logEmbed = discord.Embed(description = LogPrefix + str(message.server) + "/" + str(message.channel) + " : " + message.content, colour=LogColor)
 
-		logEmbed = discord.Embed(description = LogPrefix + str(message.channel) + " : " + message.content, colour=LogColor)
 		logEmbed.set_footer(text=date)
 		if message.author.avatar == None:
 			logEmbed.set_author(name = str(message.author.name) + " - " + str(rank))
@@ -228,6 +284,8 @@ async def Log(message, logLevel=0, content="", rank="USER"):
 		logEmbed = discord.Embed(description=content, colour=LogColor)
 		logEmbed.set_footer(text=date)
 		logEmbed.set_author(name = str(message.author.name), icon_url ="https://cdn.discordapp.com/avatars/"+str(message.author.id)+"/"+message.author.avatar+".png")
+		if thumbnailUrl != "":
+			logEmbed.set_thumbnail(url=thumbnailUrl)
 
 		if logLevel == 2:
 			await client.send_message(botOwner, embed=logEmbed)
@@ -290,10 +348,11 @@ async def on_message(message):
 		else:
 			channel = message.channel
 
-	if message.content.startswith(commandPrefix + 'test') and (rank in ['MASTER']):
-		await client.send_message(message.channel, "Hi ! " + str(message.author) + " my command prefix is '" + commandPrefix + "'")
-		await User_embed(channel)
-		#Hey !
+	if message.content.startswith(commandPrefix + 'test') and (rank in ['ADMIN', 'MASTER']):
+		#await client.send_message(message.channel, "Hi ! " + str(message.author) + " my command prefix is '" + commandPrefix + "'")
+		parameters = message.content.split(" ")
+		embed = discord.Embed(title = "Hi there !", description="**Nice to meet you, I'm Uso!**\nMy command prefix is ``" + commandPrefix + "``\nIf you want to know what am i capable of, try ``" + commandPrefix + "help``\nAdmins : you can mute me if needed by doing ``" + commandPrefix + "mute on``\n\nAdd the bot to your server [Here](https://discordapp.com/oauth2/authorize?client_id=318357311951208448&scope=bot&permissions=0)\nYou can come to my own server to have some help if nedded or even support the devs :D\n➥https://discord.gg/mEeMPyK\n\n:heart::heart::heart:Have fun evryone !:heart::heart::heart:")	
+		await client.send_message(channel, embed = embed)
 
 	if message.content.startswith(commandPrefix + 'backup') and (rank in ['MASTER']):
 		create_backup()
@@ -500,19 +559,12 @@ async def on_message(message):
 
 	if message.content.startswith(commandPrefix + 'user') and (rank in ['USER', 'ADMIN', 'MASTER']):
 		parameters = message.content.split(' ')
-		results = api.get_user(parameters[1])
-		if results == []:
-			try:
-				results = api.get_user(int(parameters[1]))
-			except ValueError:
-				await client.send_message(channel, "User not found!")
-		stats = []
-		if not (results == []):
-			for item in results[0]:
-				stats.append(item)
-			await User_embed(channel, username=str(stats[17][1]), rank_SS=str(stats[6][1]), rank_S=str(stats[5][1]), rank_A=str(stats[4][1]) , pp=str(stats[13][1]), worldRank=str(stats[12][1]), localRank=str(stats[11][1]), country=stats[7][1], playcount=str(stats[10][1]), level=str(stats[9][1]), osuId = str(stats[16][1]), totalScore = str(stats[15][1]), ranckedScore = str(stats[14][1]), accuracy = str(stats[0][1])[0:4]+"%", hit_300 = str(stats[2][1]), hit_100 = str(stats[1][1]), hit_50 = str(stats[3][1]))
+		if len(parameters) == 2:
+			parameters.append("osu")
+		if len(parameters) != 3:
+			await client.send_message(channel, "Wrong usage ! `o!user <your osu username/id/url> <mode>` for more informations, use `o!help`\n*Tip: you can use 'me' instead of your username if you linked your osu account with the bot*")
 		else:
-			await client.send_message(channel, "User not found!")
+			await user(channel, user = parameters[1], mode = parameters[2], discordId= message.author.id)
 
 	if message.content.startswith(commandPrefix + 'link_user') and (rank in ['USER', 'ADMIN', 'MASTER']):
 		parameters = message.content.replace(commandPrefix + 'link_user ', '')
@@ -592,7 +644,6 @@ async def on_message(message):
 async def on_error(event, *args, **kwargs):
 	message = args[0]
 
-	channel = message.channel
 	if message.content.startswith(commandPrefix) and message.channel.is_private == False and message.content.startswith(commandPrefix + 'mute') == False:
 		conn = sqlite3.connect(databasePath)
 		cursor = conn.cursor()
@@ -604,6 +655,20 @@ async def on_error(event, *args, **kwargs):
 
 	print (Red + traceback.format_exc() + Color_Off)
 	await Log(message, content = "Message:\n" + message.content + "\n\n```" + traceback.format_exc() + "```", logLevel=2)
-	await client.send_message(channel, "Oops ! Unexpected error :/\nGo to my personal server to ask for some help if needed !\nhttps://discordapp.com/invite/mEeMPyK")
+	await client.send_message(channel, "Oops ! Unexpected error :/\nGo to my personal server to ask for some help if needed !\n<https://discord.gg/mEeMPyK>")
+
+@client.event
+async def on_server_join(server):
+	conn = sqlite3.connect(databasePath)
+	cursor = conn.cursor()
+	try:
+		cursor.execute("INSERT INTO muted (serverID, state) VALUES (?, ?)", (server.id, 'off'))
+		conn.commit()
+	except sqlite3.IntegrityError:
+		print ("Already in database")
+	conn.close()
+	embed = discord.Embed(title = "Hi there !", description="**Nice to meet you, I'm Uso!**\nMy command prefix is ``" + commandPrefix + "``\nIf you want to know what am i capable of, try ``" + commandPrefix + "help``\nAdmins : you can mute me if needed by doing ``" + commandPrefix + "mute on``\n\nAdd the bot to your server [Here](https://discordapp.com/oauth2/authorize?client_id=318357311951208448&scope=bot&permissions=0)\nYou can come to my own server to have some help if nedded or even support the devs :D\n➥https://discord.gg/mEeMPyK\n\n:heart::heart::heart:Have fun evryone !:heart::heart::heart:")	
+	message = await client.send_message(client.get_server(server.id), embed = embed)
+	await Log(message, logLevel = 1, thumbnailUrl = server.icon_url, content = "**I've been added to a new server !**\n__Server name :__ **" + str(server.name) + "**\n__Server Id :__ **" + str(server.id) + "**\n__Users :__ **" + str(server.member_count) + "**\n__Owner name :__ **" + str(server.owner.name) + "**")
 
 client.run(constants.Api.discordToken)
