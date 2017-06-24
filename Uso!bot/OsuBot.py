@@ -165,7 +165,7 @@ def create_backup():
 	if (len(files)>10):
 		os.system("rm " + constants.Paths.backupDirrectory + files[0])
 
-def get_user(user = "", mode = OsuMode.osu, discordId = 0):
+def get_user(user = "", mode = OsuMode.osu, discordId = 0, me = True):
 
 	if type(mode) == str:
 		if mode == "taiko":
@@ -177,7 +177,7 @@ def get_user(user = "", mode = OsuMode.osu, discordId = 0):
 		else:
 			mode = OsuMode.osu
 
-	if user == "me":
+	if user == "me" and me:
 
 		conn = sqlite3.connect(databasePath)
 		cursor = conn.cursor()
@@ -203,8 +203,6 @@ async def user(channel, mode = "osu", user = "", discordId = 0):
 	else :
 		stats = []
 		for item in results[0]:
-			#print (str(len(stats)) + " - ", end="")
-			#print (item)
 			stats.append(item)
 		await User_embed(channel, mode=mode, username=str(stats[17][1]), rank_SS=str(stats[6][1]), rank_S=str(stats[5][1]), rank_A=str(stats[4][1]) , pp=str(stats[13][1]), worldRank=str(stats[12][1]), localRank=str(stats[11][1]), country=stats[7][1], playcount=str(stats[10][1]), level=str(stats[9][1]), osuId = str(stats[16][1]), totalScore = str(stats[15][1]), ranckedScore = str(stats[14][1]), accuracy = str(stats[0][1])[0:4]+"%", hit_300 = str(stats[2][1]), hit_100 = str(stats[1][1]), hit_50 = str(stats[3][1]))
 
@@ -230,8 +228,8 @@ async def User_embed(channel, mode = "osu" ,username = "Test", pp="1000", rank_S
 	if level == "None":
 		embed.add_field(name = "Oops !", value="This user haven't played yet in this mode :/")
 	else:
-		embed.add_field(name="General", value="__Performance:__ **" + pp + "pp\n:map:#" + worldRank + " :flag_"+ country.lower() +":#"+ localRank + "**\n__Playcount :__ **" + playcount + "**\n__Level :__ **" + level + "**\n__Accuracy :__ **" + accuracy + "**", inline=True)
-		embed.add_field(name="ᅠ", value="[Profile](https://osu.ppy.sh/users/" + osuId + ") / [Osu!Track](https://ameobea.me/osutrack/user/" + username + ") / [PP+](https://syrin.me/pp+/u/"+username+") / [Osu!Chan](https://syrin.me/osuchan/u/" + username + ")\n__Total score :__ **"+totalScore+"**\n__Rancked score :__ **" + ranckedScore + "**", inline=True)
+		embed.add_field(name="General", value="__Performance:__ **" + pp + "pp\n:map:#" + worldRank + " :flag_"+ country.lower() +":#"+ localRank + "**\n__Playcount:__ **" + playcount + "**\n__Level:__ **" + level + "**", inline=True)
+		embed.add_field(name="ᅠ", value="[Profile](https://osu.ppy.sh/users/" + osuId + ") / [Osu!Track](https://ameobea.me/osutrack/user/" + username.replace(" ", "%20") + ") / [PP+](https://syrin.me/pp+/u/"+username.replace(" ", "%20")+") / [Osu!Chan](https://syrin.me/osuchan/u/" + username.replace(" ", "%20") + ")\n__Total score:__ **"+totalScore+"**\n__Ranked score:__ **" + ranckedScore + "**\n__Accuracy:__ **" + accuracy + "**", inline=True)
 		embed.add_field(name="Hits (300/100/50)", value="**" + hit_300 + "//" + hit_100 + "//" + hit_50 + "**", inline=True)
 		embed.add_field(name="Ranks (SS/S/A)", value="**" + rank_SS + "//" + rank_S + "//" + rank_A + "**", inline=True)
 	embed.set_footer(icon_url="https://raw.githubusercontent.com/Lemmmy/osusig/master/img/" + mode +".png", text="Results for " + mode + " mode")
@@ -244,17 +242,20 @@ async def Log(message, logLevel=0, content="", rank="USER", thumbnailUrl = ""):
 		LogPrefix = "**WARNING : **"
 		LogColor=discord.Colour.gold()
 		print (Yellow + LogPrefix + message.author.name + " : " + message.content + Color_Off)
-		print (Yellow + content + Color_Off)
+		if content != "":
+			print (Yellow + content + Color_Off)
 	elif logLevel == 2:
 		LogPrefix = "__**ERROR : **__"
 		LogColor=discord.Colour.red()
 		print (Red + LogPrefix + message.author.name + " : " + message.content + Color_Off)
-		print (Red + content + Color_Off)
+		if content != "":
+			print (Red + content + Color_Off)
 	else:
 		LogPrefix = ""
 		LogColor=discord.Colour.default()
 		print (LogPrefix + message.author.name + " : " + message.content)
-		print (content)
+		if content != "":
+			print (content)
 
 	date = datetime.now().strftime('%Y/%m/%d at %H:%M:%S')
 
@@ -390,7 +391,7 @@ async def on_message(message):
 			if (pp_average == 0):
 				await client.send_message(channel, "Please run the *" + commandPrefix + "update_pp_stats* command to set your stats for the first time in our database")
 			else:
-				pp_average_fluctuation = pp_average*0.05
+				pp_average_fluctuation = pp_average*0.04
 
 				cursor.execute("Select recomendedBeatmaps From users where DiscordId = ?", (str(message.author.id),))
 				alreadyRecomendedId = cursor.fetchall()[0][0]
@@ -568,13 +569,7 @@ async def on_message(message):
 
 	if message.content.startswith(commandPrefix + 'link_user') and (rank in ['USER', 'ADMIN', 'MASTER']):
 		parameters = message.content.replace(commandPrefix + 'link_user ', '')
-		try:
-			results = api.get_user(parameters)
-			if results == []:
-				results = api.get_user(int(parameters))
-				print(results)
-		except IndexError:
-			await client.send_message(channel, "Something went wrong ...")
+		results = get_user(user = parameters, me=False)
 
 		stats = []
 		if not (results == []):
@@ -586,21 +581,16 @@ async def on_message(message):
 			operationDone = link_user(userDiscordId, osuUsername, osuId, "USER")
 
 			await client.send_message(channel, "Your account has been successfuly " + operationDone + " to ")
-			#await Log(message, logLevel=0, content="Account linked")
-			await User_embed(channel, username=str(stats[17][1]), pp=str(stats[13][1]), worldRank=str(stats[12][1]), localRank=str(stats[11][1]), country=stats[7][1], playcount=str(stats[10][1]), level=str(stats[9][1]), osuId = str(stats[16][1]), totalScore = str(stats[15][1]), ranckedScore = str(stats[14][1]), accuracy = str(stats[0][1])[0:4]+"%" )
-			if operationDone == "linked":
-				await client.send_message(channel, "Please wait while I'm updating your stats ...")
+			await User_embed(channel, username=str(stats[17][1]), rank_SS=str(stats[6][1]), rank_S=str(stats[5][1]), rank_A=str(stats[4][1]) , pp=str(stats[13][1]), worldRank=str(stats[12][1]), localRank=str(stats[11][1]), country=stats[7][1], playcount=str(stats[10][1]), level=str(stats[9][1]), osuId = str(stats[16][1]), totalScore = str(stats[15][1]), ranckedScore = str(stats[14][1]), accuracy = str(stats[0][1])[0:4]+"%", hit_300 = str(stats[2][1]), hit_100 = str(stats[1][1]), hit_50 = str(stats[3][1]))
+			update_pp_message = await client.send_message(channel, "<:empty:317951266355544065> Updating your pp stats for "+ str(message.author) +" ...")
 
-				if update_pp_stats(osuId, message.author.id) == 0:
-					#await client.send_message(logsChannel, Log(str(client.user.name), "Successfuly updated " + str(message.author) + "'s pp stats", 0))
-					await client.send_message(channel, "Successfuly updated " + str(message.author) + "'s pp stats")
+			if update_pp_stats(osuId, message.author.id) == 0:
+				await client.edit_message(update_pp_message, "<:check:317951246084341761> Updating your pp stats for "+ str(message.author) +" ... - Done !")
 
-				else:
-					#await client.send_message(logsChannel, Log(str(client.user.name), "Unexpected error for " + str(message.author), 2))
-					await client.send_message(channel, "Unexpected error, please try again later or contact Renondedju for more help")
+			else:
+				await client.edit_message(update_pp_message, "<:xmark:317951256889131008> Updating your pp stats for "+ str(message.author) +" ... - Oops ! Unexpected error.")
 		else:
-			#await client.send_message(logsChannel, Log(str(client.user.name), "User not found", 0))
-			await client.send_message(channel, "User not found!")
+			await client.send_message(channel, "Oups sorry, didn't find this user\n*Try with your osu id instead or the link to your profile*")
 
 	if message.content.startswith(commandPrefix + 'update_pp_stats') and (rank in ['USER', 'ADMIN', 'MASTER']):
 		conn = sqlite3.connect(databasePath)
