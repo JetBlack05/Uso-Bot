@@ -7,7 +7,7 @@ The current command prefix is ``o!``
 
 	➥ ``help`` Show this message
 
-	➥ ``support`` Show the support message
+	➥ ``support`` Show the support message (add the bot to your server here)
 
 	➥ ``r`` or ``recommend`` Automatically recommend you a beatmap based on your average amount of pp
 →*ex. o!recommend*
@@ -29,6 +29,10 @@ The current command prefix is ``o!``
 
 	➥ ``mute <'on' or 'off'>`` **admins only** allows the bot to chat in the server or not *(if not the bot will answer in pm)*
 →*ex. o!mute on*
+
+	➥ ``dedicated_channel <'set' or 'remove'> **admins only** set the main channel of the bot in the channel where the command has been called 
+*(Then, if someone calls the bot in another channel, he will be mentioned in the main channel of the bot with his command result)*
+→*ex. o!dedicated_channel set*
 
 	➥ ``link_user <osu username or osu id>`` Link your discord account to an osu! account (requiered for ``r`` and ``update_pp_stats``)
 →*ex. o!link_user Renondedju*

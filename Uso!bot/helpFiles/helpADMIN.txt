@@ -7,7 +7,7 @@ The current command prefix is ``o!``
 
 	➥ ``help`` Show this message
 
-	➥ ``support`` Show the support message
+	➥ ``support`` Show the support message (add the bot to your server here)
 
 	➥ ``status <message> | <status>`` Change the bot's status
 status can be : 'online', 'offline', 'idle', 'do_not_disturb' alias 'dnd', 'invisible'
@@ -36,6 +36,10 @@ status can be : 'online', 'offline', 'idle', 'do_not_disturb' alias 'dnd', 'invi
 
 	➥ ``mute <'on' or 'off'>`` **admins only** allows the bot to chat in the server or not *(if not the bot will answer in pm)*
 →*ex. o!mute on*
+
+	➥ ``dedicated_channel <'set' or 'remove'> **admins only** set the main channel of the bot in the channel where the command has been called 
+*(Then, if someone calls the bot in another channel, he will be mentioned in the main channel of the bot with his command result)*
+→*ex. o!dedicated_channel set*
 
 	➥ ``add_beatmap <beatmap url>`` Adds a beatmap to the database
 →*ex. o!add_beatmap https://osu.ppy.sh/b/1199897&m=0*

@@ -13,7 +13,7 @@ import sqlite3
 import os
 import re
 from datetime import datetime
-from osuapi import OsuApi, ReqConnector, OsuMode
+from osuapi import OsuApi, ReqConnector, OsuMode, BeatmapStatus
 import requests
 import constants
 
@@ -236,6 +236,59 @@ async def User_embed(channel, mode = "osu" ,username = "Test", pp="1000", rank_S
 
 	await client.send_message(channel, embed=embed)
 
+async def Beatmap_Embed(channel = None ,title = "Something", diff_overall = "8.5", diff_size = "5", diff_approach = "9", diff_drain = "9", mods = "HDDTHR", difficultyName = "Too hard for u", bpm = "300", max_combo = "1000", total_length = "2:55", drain_lenght = "2:35", difficultyrating="8.52", mode='taiko', beatmapSetId = "602313", beatmapId = "1272259", passcount = 1001, playcount = 12521, approved=True, pp_100 = "350", pp_98 = "293"):
+
+	if approved == BeatmapStatus.ranked:
+		ranked = 'Ranked'
+	elif approved == BeatmapStatus.approved:
+		ranked = 'Approved'
+	elif approved == BeatmapStatus.qualified :
+		ranked = 'Qualified'
+	elif approved == BeatmapStatus.pending :
+		ranked = 'Pending'
+	else:
+		ranked = 'Unranked'
+	 
+
+	if mode not in ['osu', 'taiko', 'mania', 'ctb']:
+		mode = 'osu'
+
+	if mode == "osu":
+		modelink = "osu"
+	elif mode == "taiko":
+		modelink = "taiko"
+	elif mode == "ctb":
+		modelink = "fruits"
+	else :
+		modelink = "mania"
+
+	if mods != "":
+		mods = re.sub("(.{10})", "\\1\n", mods, 0, re.DOTALL)
+		mods = mods.replace("EZ", "<:mod_easy:327800791631134731>")
+		mods = mods.replace("SD", "<:mod_suddendeath:327800921113231361>")
+		mods = mods.replace("SO", "<:mod_spunout:327800910249984001>")
+		mods = mods.replace("HR", "<:mod_hardrock:327800817711054858>")
+		mods = mods.replace("PF", "<:mod_perfect:327800879019458571>")
+		mods = mods.replace("DT", "<:mod_doubletime:327800759741579265>")
+		mods = mods.replace("NC", "<:mod_nightcore:327800859989901312>")
+		mods = mods.replace("HD", "<:mod_hidden:328172007931904002>")
+		mods = mods.replace("FL", "<:mod_flashlight:327800804037885962>")
+		mods = mods.replace("RL", "<:mod_relax:327800900318134273>")
+		mods = mods.replace("AP", "<:mod_auto:327800780444794880>")
+	else:
+		mods = "No mods"
+
+	total_length = str(int(total_length)//60) + ":" + str(int(total_length)%60)
+	drain_lenght = str(int(drain_lenght)//60) + ":" + str(int(drain_lenght)%60)
+
+	embed = discord.Embed(title = title + " - [" + difficultyName + "] ▬ " + ranked)
+	embed.set_thumbnail(url = "https://b.ppy.sh/thumb/" + beatmapSetId + ".jpg")
+	embed.add_field(name = "General", value = "__Bpm:__ **" + bpm + "**\n__Max combo:__ **" + max_combo + "x**\n__Length:__ **" + total_length + " (" + drain_lenght + ")**\n__Stars:__ **" + str(round(difficultyrating, 2)) + "★**\nCS:**" + diff_size + "**  OD:**" + diff_overall + "**  AR:**" + diff_approach + "**  HP:**" + diff_drain + "**")
+	embed.add_field(name = "ᅠ", value = "[Thread](https://osu.ppy.sh/beatmapsets/" + beatmapSetId + "#" + modelink + "/" + beatmapId + ") / [Download](https://osu.ppy.sh/d/" + beatmapSetId + ") / [No Video](https://osu.ppy.sh/d/" + beatmapSetId + "n)\n__PP 100%:__ **" + pp_100 + "**\n__PP 98%:__ **" + pp_98 + "**\n__Success rate:__ **" + str(round(float(passcount)/playcount * 100, 0)) + "%**")
+	embed.add_field(name = "Mods", value = mods)
+	embed.set_footer(icon_url="https://raw.githubusercontent.com/Lemmmy/osusig/master/img/" + mode +".png", text="Results for " + mode + " mode")
+	await client.send_message(channel, embed=embed)
+
 async def Log(message, logLevel=0, content="", rank="USER", thumbnailUrl = ""):
 
 	if logLevel == 1:
@@ -343,11 +396,19 @@ async def on_message(message):
 	if message.content.startswith(commandPrefix) and message.channel.is_private == False and message.content.startswith(commandPrefix + 'mute') == False:
 		conn = sqlite3.connect(databasePath)
 		cursor = conn.cursor()
-		cursor.execute("SELECT state FROM muted WHERE serverID = ?", (str(message.server.id),))
+		cursor.execute("SELECT state FROM server WHERE serverID = ?", (int(message.server.id),))
 		if cursor.fetchall()[0][0] == 'on':
 			channel = message.author
 		else:
-			channel = message.channel
+			cursor.execute("SELECT dedicated_channel FROM server WHERE serverID = ?", (int(message.server.id),))
+			main_channel = str(cursor.fetchall()[0][0])
+			print (main_channel)
+			if main_channel == None or main_channel == 0 or main_channel == "0":
+				channel = message.channel
+			else:
+				channel = client.get_server(str(message.server.id)).get_channel(str(main_channel))
+				if not commandPrefix + 'dedicated_channel' in message.content:
+					await client.send_message(channel, message.author.mention + " i'm here ! I'm only allowed to speak in this channel ^^ There is your command result :")
 
 	if message.content.startswith(commandPrefix + 'test') and (rank in ['ADMIN', 'MASTER']):
 		#await client.send_message(message.channel, "Hi ! " + str(message.author) + " my command prefix is '" + commandPrefix + "'")
@@ -391,7 +452,7 @@ async def on_message(message):
 			if (pp_average == 0):
 				await client.send_message(channel, "Please run the *" + commandPrefix + "update_pp_stats* command to set your stats for the first time in our database")
 			else:
-				pp_average_fluctuation = pp_average*0.04
+				pp_average_fluctuation = pp_average*0.04 - pp_average*0.02
 
 				cursor.execute("Select recomendedBeatmaps From users where DiscordId = ?", (str(message.author.id),))
 				alreadyRecomendedId = cursor.fetchall()[0][0]
@@ -419,9 +480,15 @@ async def on_message(message):
 
 				pp_98, _, _, _, _ = return_simple_beatmap_info(url, " 98%")
 
-				description = "__100% pp__ : " + str(pp_100) + "\n" + "__98% pp__ : " + str(pp_98) + "\n" + "__95% pp__ : " + str(pp_95) + "\n" + "__Max Combo__ : " + str(combo) + "\n" + "__Stars__ : " + str(stars) + "\n" + str("*" + diff_params.upper() + "*")
-				em = discord.Embed(title=str(name), description=description, colour=0xf44242, url=url)
-				await client.send_message(channel, embed=em)
+				# description = "__100% pp__ : " + str(pp_100) + "\n" + "__98% pp__ : " + str(pp_98) + "\n" + "__95% pp__ : " + str(pp_95) + "\n" + "__Max Combo__ : " + str(combo) + "\n" + "__Stars__ : " + str(stars) + "\n" + str("*" + diff_params.upper() + "*")
+				# em = discord.Embed(title=str(name), description=description, colour=0xf44242, url=url)
+				# await client.send_message(channel, embed=em)
+				results = api.get_beatmaps(beatmap_id=int(recomendedId))
+				result = []
+				for item in results[0]:
+					result.append(item)
+				await Beatmap_Embed(channel = channel, title = result[24][1], diff_overall = str(result[9][1]), diff_size = str(result[10][1]), diff_approach = str(result[7][1]), diff_drain = str(result[8][1]), mods = "", difficultyName = str(result[26][1]), bpm = str(result[5][1]), max_combo = str(result[18][1]), total_length = result[25][1], drain_lenght = result[15][1], difficultyrating = result[11][1], mode= result[19][1], beatmapSetId = str(result[4][1]), beatmapId = str(result[3][1]), passcount = result[20][1], playcount = result[21][1], approved=result[0][1], pp_100 = pp_100, pp_98 = pp_98)
+
 				print (recomendedBeatmap)
 		else:
 			await client.send_message(channel, "Uhh sorry, seems like you haven't linked your osu! account...\nPlease use the command *" + commandPrefix + "link_user 'Your osu username' or 'your osu Id'* to link the bot to your osu account !\nEx. " + commandPrefix + "link_user Renondedju")
@@ -499,7 +566,7 @@ async def on_message(message):
 			await client.send_message(logsChannel, Log(str(message.author), "tried to add multiple beatmaps", 1))
 			await client.send_message(message.channel, "Sorry, Only Renondedju can do this !")
 
-	if message.content.startswith(commandPrefix + 'mute') and (rank in ['USER', 'ADMIN', 'MASTER']) and (message.channel.permissions_for(message.author).administrator == True or str(message.author) == "Renondedju#0204"):
+	if message.content.startswith(commandPrefix + 'mute') and (((rank in ['USER']) and message.channel.permissions_for(message.author).administrator == True) or (rank in ['ADMIN', 'MASTER'])):
 		if not (message.server.id == None):
 			conn = sqlite3.connect(databasePath)
 			cursor = conn.cursor()
@@ -509,11 +576,11 @@ async def on_message(message):
 				parameter = ''
 			if parameter.lower() in ['on', 'off']:
 				parameter = parameter.lower()
-				cursor.execute("SELECT * FROM muted WHERE serverID = ?", (str(message.server.id),))
+				cursor.execute("SELECT * FROM server WHERE serverID = ?", (str(message.server.id),))
 				if len(cursor.fetchall()) == 0:
-					cursor.execute("INSERT INTO muted (serverID, state) VALUES (?, ?)", (message.server.id, parameter))
+					cursor.execute("INSERT INTO server (serverID, state) VALUES (?, ?)", (message.server.id, parameter))
 				else:
-					cursor.execute("UPDATE muted SET state = ? WHERE serverID = ?", (parameter, str(message.server.id)))
+					cursor.execute("UPDATE server SET state = ? WHERE serverID = ?", (parameter, str(message.server.id)))
 				await client.send_message(message.channel, "Done !")
 				conn.commit()
 			else:
@@ -521,6 +588,26 @@ async def on_message(message):
 			conn.close()
 		else:
 			await client.send_message(message.channel, "You can't execute this command here (servers only)")
+
+	if message.content.startswith(commandPrefix + 'dedicated_channel') and (((rank in ['USER']) and message.channel.permissions_for(message.author).administrator == True) or (rank in ['ADMIN', 'MASTER'])):
+		parameters = message.content.split(' ')
+		server_id = message.server.id
+		channel_id = message.channel.id
+		if channel == message.author:
+			await client.send_message(channel, "Oops, you can use this command only on servers !")
+		else:
+			if parameters[1].lower() == 'set':
+				conn = sqlite3.connect(databasePath)
+				cursor = conn.cursor()
+				cursor.execute("UPDATE server SET dedicated_channel = ? WHERE serverID = ?", (int(channel_id), int(server_id)))
+				await client.send_message(message.channel, "<:check:317951246084341761> This channel is now my main channel !")
+			elif parameters[1].lower() == 'remove':
+				cursor.execute("UPDATE server SET dedicated_channel = ? WHERE serverID = ?", (0, int(server_id)))
+				await client.send_message(message.channel, "<:check:317951246084341761> I have no more main channel !")
+			else:
+				await client.send_message(message.channel, "<:xmark:317951256889131008> Wrong usage : ``o!dedicated_channel <set or remove>``")
+			conn.commit()
+			conn.close()
 
 	if message.content.startswith(commandPrefix + 'pp') and (rank in ['USER', 'ADMIN', 'MASTER']):
 		parameters = message.content.replace(commandPrefix + "pp ", "")
@@ -614,21 +701,23 @@ async def on_message(message):
 			await client.send_message(channel, "Wrong osu! id for " + str(message.author) + ". Try to link your account with an osu account by typing the command *" + commandPrefix + "link_user 'Your osu username'*")
 
 	if message.content.startswith(commandPrefix + 'help') and (rank in ['USER', 'ADMIN', 'MASTER']):
+		if (channel != message.author):
+			await client.send_message(channel, "You received your help in private message !")
 		if rank == 'ADMIN':
 			helpfile = open(constants.Paths.helpAdminFile, "r")
 			helpString = helpfile.read()
 			helpfile.close()
-			await send_big_message(channel, helpString)
+			await send_big_message(message.author, helpString)
 		elif rank == 'MASTER':
 			helpfile = open(constants.Paths.helpMasterFile, "r")
 			helpString = helpfile.read()
 			helpfile.close()
-			await send_big_message(channel, helpString)
+			await send_big_message(message.author, helpString)
 		else:
 			helpfile = open(constants.Paths.helpUserFile, "r")
 			helpString = helpfile.read()
 			helpfile.close()
-			await send_big_message(channel, helpString)
+			await send_big_message(message.author, helpString)
 
 @client.event
 async def on_error(event, *args, **kwargs):
@@ -637,7 +726,7 @@ async def on_error(event, *args, **kwargs):
 	if message.content.startswith(commandPrefix) and message.channel.is_private == False and message.content.startswith(commandPrefix + 'mute') == False:
 		conn = sqlite3.connect(databasePath)
 		cursor = conn.cursor()
-		cursor.execute("SELECT state FROM muted WHERE serverID = ?", (str(message.server.id),))
+		cursor.execute("SELECT state FROM server WHERE serverID = ?", (str(message.server.id),))
 		if cursor.fetchall()[0][0] == 'on':
 			channel = message.author
 		else:
@@ -652,7 +741,7 @@ async def on_server_join(server):
 	conn = sqlite3.connect(databasePath)
 	cursor = conn.cursor()
 	try:
-		cursor.execute("INSERT INTO muted (serverID, state) VALUES (?, ?)", (server.id, 'off'))
+		cursor.execute("INSERT INTO server (serverID, state) VALUES (?, ?)", (server.id, 'off'))
 		conn.commit()
 	except sqlite3.IntegrityError:
 		print ("Already in database")
