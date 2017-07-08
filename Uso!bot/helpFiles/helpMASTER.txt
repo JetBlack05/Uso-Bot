@@ -28,8 +28,18 @@ status can be : 'online', 'offline', 'idle', 'do_not_disturb' alias 'dnd', 'invi
 	➥ ``kill`` Kills the bot
 →*ex. o!kill*
 
-	➥ ``r`` or ``recommend`` Automatically recommend you a beatmap based on your average amount of pp
-→*ex. o!recommend*
+	➥ ``r`` Automatically recommend you a beatmap (v2.0)
+
+With this rework, you can now use options to customise your requests !
+To use an option, simply type ``o!r /<option name> <option parameter>``
+
+• ``/c <number>`` or ``/count <number>`` will allow you to request multiple beatmaps at once ! (up to 5)
+• ``/r <'true' or 'false'>`` or ``/ranked <'true' or 'false'>`` will allow you to choose wether or not the map will be ranked
+• ``/m <mods>`` or ``/mods <mods>`` will allow you to select witch mods you want to play
+*(The only supported mods for now are HD, HR and DT)*
+• ``/a <accuracy>`` or ``/accuracy <accuracy>`` allow you to change your 'future you' accuracy
+• ``/pp <number>`` allow to change the pp value of the recomendation (for training purpose)
+→*ex. o!r /c 5 /m HDDT*
 
 	➥ ``user <your osu username> <mode>`` Displays user stats
 
@@ -48,7 +58,7 @@ status can be : 'online', 'offline', 'idle', 'do_not_disturb' alias 'dnd', 'invi
 	➥ ``mute <'on' or 'off'>`` **admins only** allows the bot to chat in the server or not *(if not the bot will answer in pm)*
 →*ex. o!mute on*
 
-	➥ ``dedicated_channel <'set' or 'remove'> **admins only** set the main channel of the bot in the channel where the command has been called 
+	➥ ``dedicated_channel <'set' or 'remove'>`` **admins only** set the main channel of the bot in the channel where the command has been called 
 *(Then, if someone calls the bot in another channel, he will be mentioned in the main channel of the bot with his command result)*
 →*ex. o!dedicated_channel set*
 
@@ -66,4 +76,12 @@ Look at the little circle on my profile !
 *<:offline:317951122243452938> means* : Offline
 *<:online:317951041838514179> means* : Up and running
 
-Git : https://github.com/Renondedju/Uso-Bot
+▬▬▬ Links + Help Us ! ▬▬▬
+
+•Wanna report a bug ? <https://discordapp.com/invite/mEeMPyK>
+
+•Help us improving the recomendations of the bot by sharing your beatmaps with us : <https://github.com/Renondedju/Osu-scan>
+
+•Add the bot to your own server : <https://discordapp.com/oauth2/authorize?client_id=318357311951208448&scope=bot&permissions=8>
+
+Git : <https://github.com/Renondedju/Uso-Bot>
