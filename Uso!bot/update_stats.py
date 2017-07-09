@@ -2,12 +2,6 @@ from osuapi import *
 import sqlite3
 import time
 
-#databaseDirr = "/home/pi/DiscordBots/OsuBot/beatmaps/NewDatabase.db"
-
-#conn = sqlite3.connect(databaseDirr)
-#cursor = conn.cursor()
-
-#api = OsuApi("fa795ecfa56905e00bb05c175c8371d2548f35f2", connector=ReqConnector())
 mods = [OsuMod.NoMod, OsuMod.HardRock, OsuMod.Hidden, OsuMod.DoubleTime, OsuMod.DoubleTime | OsuMod.Hidden, OsuMod.DoubleTime | OsuMod.HardRock, OsuMod.HardRock | OsuMod.Hidden, OsuMod.DoubleTime | OsuMod.Hidden | OsuMod.HardRock]
 
 class UserNotInDatabase(Exception):
@@ -67,6 +61,3 @@ def update_all_stats():
 		update_stats(DiscordId[0])
 		print ("Done")
 
-#update_all_stats()
-
-#conn.close()

@@ -1,11 +1,6 @@
 import sqlite3
 import random
 
-#databaseDirr = "/home/pi/DiscordBots/OsuBot/beatmaps/NewDatabase.db"
-
-#conn = sqlite3.connect(databaseDirr)
-#cursor = conn.cursor()
-
 def recommendation(discordId, conn, ranked = True, mods = "", count = 1, pp = None, acc = None):
 
 	cursor = conn.cursor()
@@ -69,5 +64,3 @@ def select_mod(mods_chance):
 
 	return random.choice([k for k in dictionary for dummy in range(dictionary[k])])
 
-#print (recommendation(82986435782643712, conn))
-#conn.close()
