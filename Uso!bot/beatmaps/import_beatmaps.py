@@ -78,7 +78,7 @@ def chk(ctx):
 
 BUFSIZE = 2000000
 
-api = OsuApi("fa795ecfa56905e00bb05c175c8371d2548f35f2", connector=ReqConnector())
+api = OsuApi("nope !", connector=ReqConnector())
 accuracys = [100, 99, 98, 97]
 mods = [pyoppai.nomod, pyoppai.hr, pyoppai.hd, pyoppai.dt, pyoppai.dt | pyoppai.hd, pyoppai.dt | pyoppai.hr, pyoppai.hd | pyoppai.hr, pyoppai.dt | pyoppai.hr | pyoppai.hd]
 mods_name = ["Nomod", "HR", "HD", "DT", "HDDT", "HRDT", "HDHR", "HRHDDT"]
