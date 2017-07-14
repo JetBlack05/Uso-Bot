@@ -1,1 +1,1 @@
-echo 'Killing Uso!bot ..';sudo pkill -f OsuBot.py;sleep 2;echo 'Now restarting Uso!bot';sudo python3.5 /home/pi/DiscordBots/OsuBot/OsuBot.py $1 $2 $3;
+echo 'Killing Uso!bot ..';sudo pkill -f UsoDiscord.py;sleep 2;echo 'Now restarting Uso!bot';sudo python3.5 /root/UsoBot/UsoDiscord.py $1 $2 $3;

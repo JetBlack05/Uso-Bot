@@ -1,11 +1,19 @@
+#!/opt/python3/bin/python3
+
 import sqlite3
 import random
 
-def recommendation(discordId, conn, ranked = True, mods = "", count = 1, pp = None, acc = None):
+def recommendation(discordId, conn, osu_id = 0, ranked = True, mods = "", count = 1, pp = None, acc = None):
 
 	cursor = conn.cursor()
-	cursor.execute("SELECT * FROM users WHERE DiscordId = ?", [int(discordId),])
+
+	if osu_id ==0:
+		cursor.execute("SELECT * FROM users WHERE DiscordId = ?", [int(discordId),])
+	else:
+		cursor.execute("SELECT * FROM users WHERE osuId = ?", [int(osu_id),])
+
 	request_result = cursor.fetchall()[0]
+	osu_id = int(request_result[2])
 
 	if pp == None:
 		pp_average = request_result[5]
@@ -24,7 +32,7 @@ def recommendation(discordId, conn, ranked = True, mods = "", count = 1, pp = No
 	pp_querry = "PP_" + str(accuracy_average) + mods
 	recommended_querry =  {"": "NoMod_recommended", "_HR":"HR_recommended", "_HD":"HD_recommended", "_DT":"DT_recommended", "_DTHD":"DTHD_recommended", "_DTHR":"DTHR_recommended", "_HRHD":"HRHD_recommended", "_DTHRHD":"DTHRHD_recommended"}[mods]
 
-	cursor.execute("SELECT " + recommended_querry + " FROM users WHERE discordId = ?", [discordId,])
+	cursor.execute("SELECT " + recommended_querry + " FROM users WHERE osuId = ?", [osu_id,])
 	recommended = cursor.fetchall()[0][0]
 
 	if recommended == None:
@@ -46,14 +54,14 @@ def recommendation(discordId, conn, ranked = True, mods = "", count = 1, pp = No
 		ar = diff_params[2].replace("ar:", "")
 		hp = diff_params[3].replace("hp:", "")
 
-		cursor.execute("SELECT PP_100" + mods + ", PP_98" + mods + " FROM beatmaps WHERE beatmapId = ?", [beatmap[0],])
+		cursor.execute("SELECT PP_100" + mods + ", PP_99" + mods + ", PP_98" + mods + " FROM beatmaps WHERE beatmapId = ?", [beatmap[0],])
 		pp_results = cursor.fetchall()[0]
 
-		recommended_beatmaps.append((beatmap[9], od, cs, ar, hp, mods.replace("_", ""), beatmap[8], beatmap[5], beatmap[4], beatmap[6], beatmap[7], beatmap[3], beatmap[1], beatmap[0], ranked, pp_results[0], pp_results[1]))
+		recommended_beatmaps.append((beatmap[9], od, cs, ar, hp, mods.replace("_", ""), beatmap[8], beatmap[5], beatmap[4], beatmap[6], beatmap[7], beatmap[3], beatmap[1], beatmap[0], ranked, pp_results[0], pp_results[1], pp_results[2], beatmap[10]))
 
 		recommended += "," + str(beatmap[0])
 
-	cursor.execute("UPDATE users SET " + recommended_querry + " = ? WHERE DiscordId = ?", [recommended, discordId])
+	cursor.execute("UPDATE users SET " + recommended_querry + " = ? WHERE osuId = ?", [recommended, osu_id])
 	conn.commit()
 
 	return recommended_beatmaps
@@ -63,4 +71,3 @@ def select_mod(mods_chance):
 	dictionary = dict(zip(mods_name, mods_chance))
 
 	return random.choice([k for k in dictionary for dummy in range(dictionary[k])])
-

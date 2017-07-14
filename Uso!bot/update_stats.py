@@ -1,3 +1,5 @@
+#!/opt/python3/bin/python3
+
 from osuapi import *
 import sqlite3
 import time
@@ -19,9 +21,10 @@ def print_perfs(stats, osuId, plays):
 	for index in range(len(mods)):
 		print(str(mods[index].longname) + ": " + str(stats[2][index]) + "%")
 
-def update_stats(discordId, conn, api, scores = 20, osuId = 0):
+def update_stats(discordId, conn, api, scores = 20, osuId = 0, username = ""):
 	
 	cursor = conn.cursor()
+	osuId = int(osuId)
 
 	if type(discordId) != int:
 		raise ValueError("The discord id provided should be of type int")
@@ -30,14 +33,20 @@ def update_stats(discordId, conn, api, scores = 20, osuId = 0):
 	pp_average = 0
 	mods_perference = [0, 0, 0, 0, 0, 0, 0, 0]
 	
-	cursor.execute("SELECT * FROM users WHERE DiscordId = ?", [int(discordId)])
-	requestResults = cursor.fetchall()
-	if requestResults != []:
-		osuId = requestResults[0][2]	
-	else :
-		raise UserNotInDatabase("The discord id '" + str(discordId) + "' isn't in the database")
+	if osuId == 0 and username == "":
+		cursor.execute("SELECT * FROM users WHERE DiscordId = ?", [int(discordId)])
+		requestResults = cursor.fetchall()
+		if requestResults != []:
+			osuId = requestResults[0][2]
+		else :
+			raise UserNotInDatabase("The discord id '" + str(discordId) + "' isn't in the database")
 
-	apiResults = api.get_user_best(osuId, limit = scores)
+	apiResults = None
+	if username != "":
+		apiResults = api.get_user_best(username, limit = scores)
+	else:
+		apiResults = api.get_user_best(osuId, limit = scores)
+
 	for beatmap in apiResults:
 		beatmap_info = {k:v for k, v in beatmap}
 		acc_average += acc(beatmap_info['count300'], beatmap_info['count100'], beatmap_info['count50'], beatmap_info['countmiss'])/scores
@@ -48,16 +57,15 @@ def update_stats(discordId, conn, api, scores = 20, osuId = 0):
 		except:
 			mods_perference[0] += 100/scores
 
-	cursor.execute("UPDATE users SET accuracy_average = ?, pp_average = ?, NoMod_average = ?, HR_average = ?, HD_average = ?, DT_average = ?, DTHD_average = ?, DTHR_average = ?, HRHD_average = ?, DTHRHD_average = ?  WHERE DiscordId = ?", [round(acc_average, 2), round(pp_average, 2), mods_perference[0], mods_perference[1], mods_perference[2], mods_perference[3], mods_perference[4], mods_perference[5], mods_perference[6], mods_perference[7], int(discordId)])
+	cursor.execute("UPDATE users SET accuracy_average = ?, pp_average = ?, NoMod_average = ?, HR_average = ?, HD_average = ?, DT_average = ?, DTHD_average = ?, DTHR_average = ?, HRHD_average = ?, DTHRHD_average = ?  WHERE osuId = ?", [round(acc_average, 2), round(pp_average, 2), mods_perference[0], mods_perference[1], mods_perference[2], mods_perference[3], mods_perference[4], mods_perference[5], mods_perference[6], mods_perference[7], int(osuId)])
 	conn.commit()
 
 	return round(acc_average, 2), round(pp_average, 2), mods_perference
 
-def update_all_stats():
-	cursor.execute("SELECT DiscordId FROM users")
+def update_all_stats(conn, cursor, api):
+	cursor.execute("SELECT osuId FROM users")
 	requestResults = cursor.fetchall()
-	for DiscordId in requestResults:
-		print(DiscordId[0], end = " ")
-		update_stats(DiscordId[0])
+	for osu_id in requestResults:
+		print(osu_id, end = " ")
+		update_stats(0, conn, api, osuId = osu_id)
 		print ("Done")
-
