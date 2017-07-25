@@ -8,8 +8,9 @@ Evry parameters written in this file are private and secret !
 class Api:
 	osuApiKey = "" #Osu api key (can be found here : https://osu.ppy.sh/p/api#)
 	discordToken = "" #Discord bot token (https://discordapp.com/developers/applications/me)
-	IRCusername = ""
-	IRCpassword = ""
+	discordIRCToken = "" #Discord-IRC bot token
+	IRCusername = "" #IRC username
+	IRCpassword = "" #IRC password
 
 class Paths:
 	workingDirrectory = "/root/UsoBot/" #The full path to OsuBot.py
@@ -28,3 +29,4 @@ class Settings:
 	mainChannelId = "310348632094146570" #Main channel of the bot's server
 	logsChannelId = "315166181256593418" #Logs channel of the bot's server
 	ownerDiscordId = "213262036069515264" #Discord Id of the bot owner
+	inviteLink = "https://discord.gg/Qsw3yD5" #Official invite link to the dev server

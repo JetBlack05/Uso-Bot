@@ -5,6 +5,7 @@ Created on Sat May 20 22:39:26 2017
 @author: Renondedju
 """
 import discord
+from discord.ext import commands
 import asyncio
 import sys
 import traceback
@@ -13,7 +14,6 @@ import os
 import re
 import pyoppai
 import constants
-import threading
 import recommendation
 import update_stats
 from datetime import datetime
@@ -21,9 +21,8 @@ import requests
 from osuapi import OsuMode, BeatmapStatus, OsuApi, ReqConnector
 from userlink_key import userlink
 
-#Uso !#7507
-
-client = discord.Client()
+client = commands.Bot(command_prefix=commands.when_mentioned_or(constants.Settings.commandPrefix))
+client.remove_command("help")
 commandPrefix = constants.Settings.commandPrefix
 
 api = OsuApi(constants.Api.osuApiKey, connector=ReqConnector())
@@ -32,23 +31,13 @@ LogFile = open(constants.Paths.logsFile, "a")
 mainChannel = None
 logsChannel = None
 botOwner = None
+Refresh = True
 databasePath = constants.Paths.beatmapDatabase
 
-conn = sqlite3.connect(databasePath)
+conn = sqlite3.connect(constants.Paths.beatmapDatabase)
 cursor = conn.cursor()
 
 userlink = userlink(conn)
-
-#Colors
-Color_Off='\x1b[0m'
-Red='\x1b[1;31;40m'
-Yellow='\x1b[1;33;40m'
-
-def IRC()
-	os.system("python3.5 /root/UsoBot/IRC/irc_socket.py")
-
-IRC = threading.Thread(target=IRC)
-IRC.start()
 
 def return_user_rank(discordId):
 	if not discordId == constants.Settings.ownerDiscordId:
@@ -110,7 +99,7 @@ async def change_presence(status, game):
 	except websockets.exceptions.ConnectionClosed:
 		pass
 
-async def user(channel, mode = "osu", user = "", discordId = 0):
+async def User(channel, mode = "osu", user = "", discordId = 0):
 	results = get_user(user = user, mode = mode, discordId = discordId)
 	if results == []:
 		if user != "me":
@@ -135,7 +124,7 @@ async def send_big_message(channel, message):
 	if finalMessage != "":
 		await client.send_message(channel, finalMessage)
 
-async def User_embed(channel, old_message = None, title_addition = "",footer_addition = "", mode = "osu" ,username = "Test", pp="1000", rank_SS = "54258", rank_S = "5421", rank_A = "5412", worldRank = "1", localRank = "1", country = "fr", playcount = "10000", level = "100", osuId = "7418575", totalScore = "15105810824020", ranckedScore="8648428841842", accuracy="99.03%", hit_300="532454", hit_100="5324", hit_50="504"):
+async def User_embed(channel, old_message = None, title_addition = "", footer_addition = "", mode = "osu" ,username = "Test", pp="1000", rank_SS = "54258", rank_S = "5421", rank_A = "5412", worldRank = "1", localRank = "1", country = "fr", playcount = "10000", level = "100", osuId = "7418575", totalScore = "15105810824020", ranckedScore="8648428841842", accuracy="99.03%", hit_300="532454", hit_100="5324", hit_50="504"):
 
 	if mode not in ['osu', 'taiko', 'mania', 'ctb']:
 		mode = 'osu'
@@ -198,7 +187,7 @@ async def Beatmaps_Embed(channel, beatmaps, approved, title, mode = 'osu'):
 		print (beatmap)
 		lenght = str(int(beatmap[9])//60) + ":" + str(int(beatmap[9])%60)
 		drain = str(int(beatmap[10])//60) + ":" + str(int(beatmap[10])%60)
-		description += "\n➥ [" + beatmap[0] + "[" + beatmap[1] + "]](https://osu.ppy.sh/beatmapsets/" + str(beatmap[14]) + "#" + modelink + "/" + str(beatmap[13]) + ") " + mods + "\n__100%:__**" + str(beatmap[3]) + "**pp __98%:__**" + str(beatmap[5]) + "**pp"
+		description += "\n➥ [" + beatmap[0] + "[" + beatmap[1] + "]](https://osu.ppy.sh/beatmapsets/" + str(beatmap[14]) + "#" + modelink + "/" + str(beatmap[13]) + ") - [Osu!Direct](osu://b/" + str(beatmap[13]) + ")" + mods + "\n__100%:__**" + str(beatmap[3]) + "**pp __98%:__**" + str(beatmap[5]) + "**pp"
 		description += "** __OD:__**" + str(beatmap[8]) + " __AR:__**" + str(beatmap[6]) + "** __CS:__**" + str(beatmap[7]) + "** **" + lenght + "(" + drain + ")** **" + str(beatmap[11]) + "★** **" + str(beatmap[12]) + "x**\n"
 
 	description = description[:-1]
@@ -253,6 +242,18 @@ async def Beatmap_Embed(channel = None ,creator_name = "?", title = "Something",
 	await client.send_message(channel, embed=embed)
 
 async def Log(message, logLevel=0, content="", rank="USER", thumbnailUrl = ""):
+	global botOwner, logsChannel, mainChannel, botOwner
+
+	#Colors
+	Color_Off='\x1b[0m'
+	Red='\x1b[1;31;40m'
+	Yellow='\x1b[1;33;40m'
+
+	mainChannel = client.get_server(constants.Settings.mainServerID).get_channel(constants.Settings.mainChannelId)
+	logsChannel = client.get_server(constants.Settings.mainServerID).get_channel(constants.Settings.logsChannelId)
+
+	if len(content) > 1900:
+		content = content[0:1900] + '```\nMesssage truncated ...'
 
 	if logLevel == 1:
 		LogPrefix = "**WARNING : **"
@@ -308,52 +309,14 @@ async def Log(message, logLevel=0, content="", rank="USER", thumbnailUrl = ""):
 
 		await client.send_message(logsChannel, embed=logEmbed)
 
-@client.event
-async def on_ready():
-	global mainChannel, logsChannel, visible, databasePath, botOwner
-	mainChannel = client.get_server(constants.Settings.mainServerID).get_channel(constants.Settings.mainChannelId)
-	logsChannel = client.get_server(constants.Settings.mainServerID).get_channel(constants.Settings.logsChannelId)
-	print('Logged in !')
+async def init_command(message):
+	global conn, cursor, commandPrefix
 
-	botOwner = await client.get_user_info(str(constants.Settings.ownerDiscordId))
-
-	await asyncio.sleep(1)
-	hello = False
-	if datetime.now().strftime('%H') == "02" or (set(sys.argv) & set(["refresh"])):
-		await change_presence(status=discord.Status('dnd'), game=discord.Game(name='Booting ...'))
-		message = await client.send_message(mainChannel, "<:empty:317951266355544065> Updating stats ...")
-		try:
-			print('Refreshing users stats ...')
-			update_stats.update_all_stats(conn, cursor, api)
-			print(" - Done")
-			print('Creating new backup ...', end="")
-			create_backup()
-			print(" Done !")
-			await client.edit_message(message, "<:check:317951246084341761> Updating stats ... Done !")
-		except:
-			await client.edit_message(message, "<:xmark:317951256889131008> Updating stats ... Fail !")
-		if not set(sys.argv) & set(["dev"]):
-			await client.send_message(mainChannel, "<:online:317951041838514179> Uso!<:Bot:317951180737347587> is now online !")
-			await change_presence(status=discord.Status('online'), game=discord.Game(name='Osu !'))
-			hello = True
-	print ('Ready !')
-	if (set(sys.argv) & set(["online"])) and hello == False:
-		await client.send_message(mainChannel, "<:online:317951041838514179> Uso!<:Bot:317951180737347587> is now online !")
-		await change_presence(status=discord.Status('online'), game=discord.Game(name='o!help'))
-	if set(sys.argv) & set(["dev"]):
-		await change_presence(status=discord.Status('idle'), game=discord.Game(name='Dev mode'))
- 
-@client.event
-async def on_message(message):
-	global api, visible, LogFile, conn, cursor
-
-	rank = 'USER'
-	if message.content.startswith(commandPrefix):
-		rank = return_user_rank(message.author.id)
-		await Log(message, 0, rank=rank)
+	rank = return_user_rank(message.author.id)
+	await Log(message, 0, rank=rank)
 
 	channel = message.channel
-	if message.content.startswith(commandPrefix) and message.channel.is_private == False and message.content.startswith(commandPrefix + 'mute') == False:
+	if message.channel.is_private == False and message.content.startswith(commandPrefix + 'mute') == False:
 		conn = sqlite3.connect(databasePath)
 		cursor = conn.cursor()
 		cursor.execute("SELECT state FROM server WHERE serverID = ?", (int(message.server.id),))
@@ -369,37 +332,84 @@ async def on_message(message):
 				if message.channel.id != main_channel and not commandPrefix + 'dedicated_channel' in message.content:
 					await client.send_message(channel, message.author.mention + " i'm here ! I'm only allowed to speak in this channel ^^ There is your command result :")
 
-	if message.content.startswith(commandPrefix + 'test') and (rank in ['ADMIN', 'MASTER']):
-		embed = discord.Embed(title = "Hi there !", description="[Osu!Direct](osu://b/1262010), [Osu!Direct](osu://s/554297)")	
-		await client.send_message(channel, embed = embed)
+	try:
+		await client.send_typing(channel)
+	except discord.errors.Forbidden:
+		embed = discord.Embed(title = "Oops", colour = 0x992d22, description="<:xmark:317951256889131008> I don't have the rights to speak in this channel ...\nPlease contact one of your server admin\nIf you don't want me to talk on the server, simply type ``o!mute on``")	
+		await client.send_message(message.author, embed = embed)
 
-	if message.content.startswith(commandPrefix + 'backup') and (rank in ['MASTER']):
+	return rank, channel, message
+
+async def missing_permissions_message(channel):
+	embed = discord.Embed(title = "Oops", colour = 0x992d22, description="<:xmark:317951256889131008> You dont have the rights to use this command !\nNeed help ? [[Official server]]({})".format(constants.Settings.inviteLink))	
+	await client.send_message(channel, embed = embed)
+
+################COMMANDS##################
+
+##Command template here :
+# @client.command(pass_context=True)
+# async def command(ctx):
+# 	rank, channel, message = await init_command(ctx.message)
+# 	if rank in ['ADMIN', 'MASTER']:
+# 		#Code here
+# 		await client.send_message(channel, embed = embed)
+# 	else:
+# 		missing_permissions_message(channel)
+
+@client.command(pass_context=True)
+async def test(ctx):
+	rank, channel, message = await init_command(ctx.message)
+	if rank in ['ADMIN', 'MASTER']:
+		embed = discord.Embed(title = "Oops", colour = 0x992d22, description="<:xmark:317951256889131008> I don't have the rights to speak in this channel ...\nPlease contact one of your server admin\nIf you don't want me to talk on the server, simply type ``o!mute on``")	
+		await client.send_message(message.author, embed = embed)
+	else:
+		await missing_permissions_message(channel)
+
+@client.command(pass_context=True)
+async def backup(ctx):
+	rank, channel, message = await init_command(ctx.message)
+	if rank in ['MASTER']:
 		create_backup()
 		await client.send_message(channel, "Backup done")
+	else:
+		await missing_permissions_message(channel)
 
-	if message.content.startswith(commandPrefix + 'reboot') and (rank in ['ADMIN', 'MASTER']):
+@client.command(pass_context=True)
+async def reboot(ctx):
+	rank, channel, message = await init_command(ctx.message)
+	if rank in ['ADMIN', 'MASTER']:
 		parameters = message.content.replace(commandPrefix + "reboot ", "")
 		embed = discord.Embed(title = "Reboot", description = "Rebooting using the parameters : " + parameters, colour = discord.Colour.gold())
 		await client.send_message(message.channel, embed = embed)
 		await Log(message, logLevel=1, content = "Rebooting using the parameters : " + parameters)
-		await asyncio.sleep(2)
 		os.system("sh " + constants.Paths.workingDirrectory + "reboot_uso.sh " + parameters)
+	else:
+		await missing_permissions_message(channel)
 
-	if message.content.startswith(commandPrefix + 'status') and (rank in ['ADMIN', 'MASTER']):
+@client.command(pass_context=True)
+async def status(ctx):
+	rank, channel, message = await init_command(ctx.message)
+	if rank in ['ADMIN', 'MASTER']:
 		parameters = message.content.replace(commandPrefix + 'status ', "")
 		playmessage = parameters.split(" | ")[0]
 		status = parameters.split(" | ")[1]
 		await asyncio.sleep(1)
 		await client.change_presence(game=discord.Game(name=playmessage), status=discord.Status(status))
 		await client.send_message(channel, "Play message set to:``" + playmessage + "``, status set to:``" + status + "``")
+	else:
+		await missing_permissions_message(channel)
 
-	if message.content.startswith(commandPrefix + 'r') and (rank in ['USER', 'ADMIN', 'MASTER']):
+@client.command(pass_context=True)
+async def r(ctx):
+	rank, channel, message = await init_command(ctx.message)
+	if rank in ['USER', 'ADMIN', 'MASTER']:
 		parameters = message.content.split("/")
 		count = 1
 		mods = None
 		ranked = True
 		Continue = True
 		acc = None
+		bpm = None
 		pp = None
 
 		for parameter in parameters:
@@ -445,12 +455,18 @@ async def on_message(message):
 				except ValueError:
 					Continue = False
 					await client.send_message(channel, "The parameter /a *(accuracy)* require a number (between 97 and 100)")
+			elif parameter[0] == "b":
+				try:
+					bpm = max(0, min(1000, int(parameter.replace("bpm", "").replace("b", "").replace(" ", ""))))
+				except ValueError:
+					Continue = False
+					await client.send_message(channel, "The parameter /b *(bpm)* require a number (between 0 and 1000)")
 
 		if Continue:
 			cursor.execute("SELECT * FROM users WHERE DiscordId = ?", [str(message.author.id)])
 			result = cursor.fetchall()
 			if result != []:
-				Recommendations = recommendation.recommendation(str(message.author.id), conn, count = count, mods = mods, ranked = ranked, acc = acc, pp = pp)
+				Recommendations = recommendation.recommendation(str(message.author.id), conn, count = count, mods = mods, ranked = ranked, acc = acc, pp = pp, bpm = bpm)
 				if count > 1:
 					beatmaps = []
 					for rec in Recommendations:
@@ -461,9 +477,14 @@ async def on_message(message):
 					rec = Recommendations[0]
 					await Beatmap_Embed(channel = channel, title = rec[0], diff_overall = rec[1], diff_size = rec[2], diff_approach = rec[3], diff_drain = rec[4], mods = rec[5], difficultyName = rec[6], bpm = rec[7], max_combo = rec[8], total_length = rec[9], drain_lenght = rec[10], difficultyrating = rec[11], mode = "osu", beatmapSetId = rec[12], beatmapId = rec[13], approved = rec[14], pp_100 = rec[15], pp_99 =rec[16], pp_98 = rec[17], creator_name = rec[18])
 			else:
-				await client.send_message(channel, "Uhh sorry, seems like you haven't linked your osu! account...\nPlease use the command *" + commandPrefix + "link_user 'Your osu username' or 'your osu Id'* to link the bot to your osu account !\nEx. " + commandPrefix + "link_user Renondedju")
+				await client.send_message(channel, "Uhh sorry, seems like you haven't linked your osu! account...\nPlease use the command ``" + commandPrefix + "link_user YourOsuUsername`` to link the bot to your osu account !\nEx. " + commandPrefix + "link_user Renondedju")
+	else:
+		await missing_permissions_message(channel)
 
-	if message.content.startswith(commandPrefix + 'mute') and (((rank in ['USER']) and message.channel.permissions_for(message.author).administrator == True) or (rank in ['ADMIN', 'MASTER'])):
+@client.command(pass_context=True)
+async def mute(ctx):
+	rank, channel, message = await init_command(ctx.message)
+	if rank in ['USER'] and message.channel.permissions_for(message.author).administrator or rank in ['ADMIN', 'MASTER']:
 		if not (message.server.id == None):
 			try :
 				parameter = message.content.split(' ')[1]
@@ -482,8 +503,13 @@ async def on_message(message):
 				await client.send_message(message.channel, "Wrong argument (expected 'on' or 'off')")
 		else:
 			await client.send_message(message.channel, "You can't execute this command here (servers only)")
+	else:
+		await missing_permissions_message(channel)
 
-	if message.content.startswith(commandPrefix + 'dedicated_channel') and (((rank in ['USER']) and message.channel.permissions_for(message.author).administrator == True) or (rank in ['ADMIN', 'MASTER'])):
+@client.command(pass_context=True)
+async def dedicated_channel(ctx):
+	rank, channel, message = await init_command(ctx.message)
+	if rank in ['USER'] and message.channel.permissions_for(message.author).administrator or rank in ['ADMIN', 'MASTER']:
 		parameters = message.content.split(' ')
 		server_id = message.server.id
 		channel_id = message.channel.id
@@ -501,19 +527,26 @@ async def on_message(message):
 			else:
 				await client.send_message(message.channel, "<:xmark:317951256889131008> Wrong usage : ``o!dedicated_channel <set or remove>``")
 			conn.commit()
+	else:
+		await missing_permissions_message(channel)
 
-	if message.content.startswith(commandPrefix + 'kill') and (rank in ['MASTER']):
-		if str(message.author.id) == constants.Settings.ownerDiscordId:
-			await client.send_message(message.channel, "Alright, killing myself ... bye everyone !")
-			client.logout()
-			client.close()
-			LogFile.close()
-			conn.close()
-			sys.exit(1)
-		else:
-			await client.send_message(message.channel, "Sorry, Only Renondedju can do this !")
+@client.command(pass_context=True)
+async def kill(ctx):
+	rank, channel, message = await init_command(ctx.message)
+	if rank in ['MASTER']:
+		await client.send_message(message.channel, "Shuting down ...")
+		client.logout()
+		client.close()
+		LogFile.close()
+		conn.close()
+		sys.exit(0)
+	else:
+		await missing_permissions_message(channel)
 
-	if message.content.startswith(commandPrefix + 'user') and (rank in ['USER', 'ADMIN', 'MASTER']):
+@client.command(pass_context=True)
+async def user(ctx):
+	rank, channel, message = await init_command(ctx.message)
+	if rank in ['USER', 'ADMIN', 'MASTER']:
 		parameters = message.content.replace(commandPrefix + 'user ', "").replace(" osu", "").replace(" mania", "").replace(" ctb", "").replace(" taiko", "")
 		if 'taiko' in message.content:
 			mode = 'taiko'
@@ -527,9 +560,14 @@ async def on_message(message):
 		if parameters == "":
 			await client.send_message(channel, "Wrong usage ! `o!user <your osu username/id/url> <mode>` for more informations, use `o!help`\n*Tip: you can use 'me' instead of your username if you linked your osu account with the bot*")
 		else:
-			await user(channel, user = parameters, mode = mode, discordId= message.author.id)
+			await User(channel, user = parameters, mode = mode, discordId= message.author.id)
+	else:
+		await missing_permissions_message(channel)
 
-	if message.content.startswith(commandPrefix + 'link_user') and (rank in ['USER', 'ADMIN', 'MASTER']):
+@client.command(pass_context=True)
+async def link_user(ctx):
+	rank, channel, message = await init_command(ctx.message)
+	if rank in ['USER', 'ADMIN', 'MASTER']:
 		parameters = message.content.replace(commandPrefix + 'link_user ', '')
 		results = get_user(user = parameters, me = False)
 
@@ -548,16 +586,22 @@ async def on_message(message):
 					embed = discord.Embed(title = "Link account", description = "Please check your private messages to get your key and the instructions to link your account to uso !", colour = 0x3498db)
 					await client.send_message(channel, embed = embed)
 
-				embed = discord.Embed(title = "Link account", colour = 0x3498db, description = "Please open <:osu:310362018773204992> and send me ``pass {}`` (my ingame name is UsoBot)\nBe careful, this key will expire in 10 min\nIf you don't find me, add me as a friend here https://osu.ppy.sh/u/10406668".format(key))
+				embed = discord.Embed(title = "Link account", colour = 0x3498db, description="Please open <:osu:310362018773204992> and send me __**``pass {}``**__\nMy ingame name is __UsoBot__ -> [profile](https://osu.ppy.sh/u/10406668)\nBe careful, this key will __expire in 10 min__".format(key))	
 				await client.send_message(message.author, embed = embed)
 
 			else:
-				await client.send_message(channel, "Sorry, you already linked your account ! If you have a problem, please contact Renondedju\n➥ <https://discord.gg/mEeMPyK>")
+				await client.send_message(channel, "Sorry, you already linked your account ! If you have a problem, please contact Renondedju\n➥ <https://discord.gg/Qsw3yD5>")
 
 		else:
 			await client.send_message(channel, "Oups sorry, didn't find this user\n*Try with your osu id instead or the link to your profile*")
 
-	if message.content.startswith(commandPrefix + 'update_pp_stats') and (rank in ['USER', 'ADMIN', 'MASTER']):
+	else:
+		missing_permissions_message(channel)
+
+@client.command(pass_context=True)
+async def update_pp_stats(ctx):
+	rank, channel, message = await init_command(ctx.message)
+	if rank in ['USER', 'ADMIN', 'MASTER']:
 		cursor.execute("SELECT OsuId FROM users WHERE DiscordId = ?", (str(message.author.id),))
 		osuId = cursor.fetchall()[0][0]
 
@@ -572,7 +616,13 @@ async def on_message(message):
 		else:
 			await client.send_message(channel, "Wrong osu! id for " + str(message.author) + ". Try to link your account with an osu account by typing the command *" + commandPrefix + "link_user 'Your osu username'*")
 
-	if message.content.startswith(commandPrefix + 'help') and (rank in ['USER', 'ADMIN', 'MASTER']):
+	else:
+		await missing_permissions_message(channel)
+
+@client.command(pass_context=True)
+async def help(ctx):
+	rank, channel, message = await init_command(ctx.message)
+	if rank in ['USER', 'ADMIN', 'MASTER']:
 		if not channel.is_private:
 			await client.send_message(channel, "You received your help in private message !")
 		if rank == 'ADMIN':
@@ -590,26 +640,71 @@ async def on_message(message):
 			helpString = helpfile.read()
 			helpfile.close()
 			await send_big_message(message.author, helpString)
+	else:
+		await missing_permissions_message(channel)
+
+################DISCORD EVENTS############
 
 @client.event
-async def on_error(event, *args, **kwargs):
-	if len(args) != 0:
-		message = args[0]
-		channel = message.channel
-		if message.content.startswith(commandPrefix) and message.channel.is_private == False and message.content.startswith(commandPrefix + 'mute') == False:
-			cursor.execute("SELECT state FROM server WHERE serverID = ?", (str(message.server.id),))
-			if cursor.fetchall()[0][0] == 'on':
-				channel = message.author
-			else:
-				channel = message.channel
+async def on_ready():
+	global mainChannel, logsChannel, visible, databasePath, botOwner, Refresh
+	mainChannel = client.get_server(constants.Settings.mainServerID).get_channel(constants.Settings.mainChannelId)
+	logsChannel = client.get_server(constants.Settings.mainServerID).get_channel(constants.Settings.logsChannelId)
+	print('Logged in !')
 
-		print (Red + traceback.format_exc() + Color_Off)
-		await Log(message, content = "Message:\n" + message.content + "\n\n```" + traceback.format_exc() + "```", logLevel=2)
-		await client.send_message(channel, "Oops ! Unexpected error :/\nGo to my personal server to ask for some help if needed !\n<https://discord.gg/mEeMPyK>")
+	botOwner = await client.get_user_info(str(constants.Settings.ownerDiscordId))
+	hello = False
+	
+	if (datetime.now().strftime('%H') == "02" and Refresh) or ((set(sys.argv) & set(["refresh"])) and Refresh):
+		await change_presence(status=discord.Status('dnd'), game=discord.Game(name='Booting ...'))
+		message = await client.send_message(mainChannel, "<:empty:317951266355544065> Updating stats ...")
+		#try:
+		print('Refreshing users stats ...')
+		update_stats.update_all_stats(conn, cursor)
+		Refresh = False
+		print(" - Done")
+		print('Creating new backup ...', end="")
+		create_backup()
+		print(" Done !")
+		await client.edit_message(message, "<:check:317951246084341761> Updating stats ... Done !")
+		# except:
+		# 	await client.edit_message(message, "<:xmark:317951256889131008> Updating stats ... Fail !")
+		if not set(sys.argv) & set(["dev"]):
+			await client.send_message(mainChannel, "<:online:317951041838514179> Uso!<:Bot:317951180737347587> is now online !")
+			await change_presence(status=discord.Status('online'), game=discord.Game(name='Osu !'))
+			hello = True
+	if (set(sys.argv) & set(["online"])) and hello == False:
+		await client.send_message(mainChannel, "<:online:317951041838514179> Uso!<:Bot:317951180737347587> is now online !")
+	if set(sys.argv) & set(["dev"]):
+		await change_presence(status=discord.Status('idle'), game=discord.Game(name='Dev mode'))
 	else:
-		print (Red + traceback.format_exc() + Color_Off)
-		message = await client.send_message(logsChannel, "Internal Error !")
-		await Log(message, content = "Reason :\n" + message.content + "\n\n```" + traceback.format_exc() + "```", logLevel=2)
+		await change_presence(status=discord.Status('online'), game=discord.Game(name='o!help'))
+	print ('Ready !')
+
+@client.event
+async def on_command_error(exception, context):
+
+	#Colors
+	Color_Off='\x1b[0m'
+	Red='\x1b[1;31;40m'
+	Yellow='\x1b[1;33;40m'
+
+	message = context.message
+	channel = message.channel
+	if not message.channel.is_private and not message.content.startswith(commandPrefix + 'mute'):
+		cursor.execute("SELECT state FROM server WHERE serverID = ?", (str(message.server.id),))
+		if cursor.fetchall()[0][0] == 'on':
+			channel = message.author
+		else:
+			channel = message.channel
+
+	errors = traceback.format_exception(type(exception), exception, exception.__traceback__)
+	output = ''
+	for line in errors:
+		output += line
+
+	await Log(message, content = "Message:\n" + message.content + "\n\n```" + output + "```", logLevel=2)
+	await client.send_message(channel, "Oops ! Unexpected error :/\nGo to my personal server to ask for some help if needed !\n<https://discord.gg/Qsw3yD5>")
 
 @client.event
 async def on_server_join(server):
@@ -618,7 +713,7 @@ async def on_server_join(server):
 		conn.commit()
 	except sqlite3.IntegrityError:
 		print ("Already in database")
-	embed = discord.Embed(title = "Hi there !", description="**Nice to meet you, I'm Uso!**\nMy command prefix is ``" + commandPrefix + "``\nIf you want to know what am i capable of, try ``" + commandPrefix + "help``\nAdmins : you can mute me if needed by doing ``" + commandPrefix + "mute on``\n\nAdd the bot to your server [Here](https://discordapp.com/oauth2/authorize?client_id=318357311951208448&scope=bot&permissions=8)\nYou can come to my own server to have some help if nedded or even support the devs :D\n➥https://discord.gg/mEeMPyK\n\n:heart::heart::heart:Have fun evryone !:heart::heart::heart:")	
+	embed = discord.Embed(title = "Hi there !", description="**Nice to meet you, I'm Uso!**\nMy command prefix is ``" + commandPrefix + "``\nIf you want to know what am i capable of, try ``" + commandPrefix + "help``\nAdmins : you can mute me if needed by doing ``" + commandPrefix + "mute on``\n\nAdd the bot to your server [Here](https://discordapp.com/oauth2/authorize?client_id=318357311951208448&scope=bot&permissions=8)\nI'm also avaiable ingame ! Look for UsoBot\nYou can come to my own server to have some help if nedded or even support the devs :D\n➥https://discord.gg/Qsw3yD5\n\n:heart::heart::heart:Have fun evryone !:heart::heart::heart:")	
 	embed.set_thumbnail(url = "https://cdn.discordapp.com/avatars/"+str(client.user.id)+"/"+str(client.user.avatar)+".png")
 	message = await client.send_message(client.get_server(server.id), embed = embed)
 	await Log(message, logLevel = 1, thumbnailUrl = server.icon_url, content = "**I've been added to a new server !**\n__Server name :__ **" + str(server.name) + "**\n__Server Id :__ **" + str(server.id) + "**\n__Users :__ **" + str(server.member_count) + "**\n__Owner name :__ **" + str(server.owner.name) + "**")
@@ -628,5 +723,5 @@ async def on_server_remove(server):
 	message = await client.send_message(logsChannel, "ᅠ")
 	await Log(message, logLevel = 1, thumbnailUrl = server.icon_url, content = "**I've been removed from a server !**\n__Server name :__ **" + str(server.name) + "**\n__Server Id :__ **" + str(server.id) + "**\n__Users :__ **" + str(server.member_count) + "**\n__Owner name :__ **" + str(server.owner.name) + "**")
 
+#Running the client
 client.run(constants.Api.discordToken)
-print("bye !")

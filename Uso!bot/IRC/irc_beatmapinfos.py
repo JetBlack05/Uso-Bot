@@ -23,29 +23,41 @@ class beatmapinfo(object):
         return output
 
     def getFlatStatLine(self, data):
-        """Returns the powerful /np stats line"""
+        """Returns the /np stats line"""
         title="[https://osu.ppy.sh/beatmapsets/"+data["songId"]+"#osu/"+data["beatmapId"]+" "+data["title"]+" ["+data["version"]+"]] "
         line=[" 97%: "+data["PP_97"], "98%: "+data["PP_98"], "99%: "+data["PP_99"], "100%: "+data["PP_100"]]
         for i in line:
             title+=i+"pp ~ "
-        title+=self.secToMin(int(data["length"]))+" ⧗ "
-        title+=data["stars"]+" ★ "
+        title+=self.secToMin(int(data["length"]))+"⧗ "
+        title+=data["stars"]+"★ "
         title+=data["bpm"]+"BPM ♪ ~ "
         title+=data["diff_params"].upper()
+        title+=" %s" % ("(if ranked)" if not data["ranked"]=="True" else "")
         return title
         
     def secToMin(self, duration):
         """Returns converted time seconds -> minutes"""
         return str(int(duration)//60) + ":" + str(int(duration)%60)
 
-    def startswith(self, message, startswith):
-        """Returns True if message starts with our particle, else False"""
-        check=True
-        try:
-            for i in range(len(startswith)):
-                if not startswith[i]==message[i]:
-                    check=False
-        except IndexError:
-            check=False
-        return check
-
+    #BETA
+    def mods_parser(self, mods):
+        """Parse a text to get all the mods out (only works for HDDTNCHR for now)"""
+        unsupported_mods = ["HT", "EZ", "NF", "SD", "PF", "FL", "RX", "AP", "SO", "AT"]
+        supported_mods = ["DT", "NC", "HR", "HD"]
+        mods_choosed = []
+        
+        mods = ' '.join(mods.split()).split(' ')
+        mods="".join(mods)
+        if not mods.isalpha():#Means there are digit so it's wrong
+            return False
+        mods=[mods[i:i+2] for i in range(0, len(mods), 2)]#1st parser = delete all the spaces in the message to only get a list of len=2 strings
+        for i in range(len(mods)):
+            if not mods[i] in supported_mods:
+                return False
+            elif mods[i] in mods_choosed:
+                pass
+            else:
+                mods_choosed.append(mods[i])
+        if not mods_choosed:
+            return False
+        return mods_choosed

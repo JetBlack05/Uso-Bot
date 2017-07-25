@@ -2,6 +2,7 @@
 
 Uso! <:Bot:317951180737347587> is an osu! bot made by Renondedju!
 If you encounter any problem, please ask for some help here! https://discordapp.com/invite/mEeMPyK
+**I'm now available in game ! Look for UsoBot**
 
 The current command prefix is ``o!``
 
@@ -28,6 +29,7 @@ To use an option, simply type ``o!r /<option name> <option parameter>``
 *(The only supported mods for now are HD, HR and DT)*
 • ``/a <accuracy>`` or ``/accuracy <accuracy>`` allow you to change your 'future you' accuracy
 • ``/pp <number>`` allow to change the pp value of the recomendation (for training purpose)
+• ``/b (bpm)`` allow you to select the bpm
 →*ex. o!r /c 5 /m HDDT*
 
 	➥ ``user <your osu username> <mode>`` Displays user stats

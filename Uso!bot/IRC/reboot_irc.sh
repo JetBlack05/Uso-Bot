@@ -1,0 +1,1 @@
+sudo pkill -f irc_socket.py ;sleep 1; sudo python3.5 /root/UsoBot/IRC/irc_socket.py

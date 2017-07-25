@@ -69,17 +69,3 @@ class UsoIrc_sender(object):
                 if now - self.buffer[sender_name]["timer"] >= self.max_interval:
                         self.buffer[sender_name]["timer"] = now
                         self.buffer[sender_name]["nb message"] = 0
-
-        def send_simple_help(self, sender_name):
-                """Send a cool simplified list of all the commands"""
-                helpfile = open(constants.Paths.helpCommandsIRCFile, "r")
-                helpString = helpfile.read()
-                helpfile.close()
-                self.send_message(sender_name, helpString)
-
-        def send_big_help(self, sender_name):
-                """Send Detailed version of the list of commands in discord if the user is linked"""
-                pass
-
-
-

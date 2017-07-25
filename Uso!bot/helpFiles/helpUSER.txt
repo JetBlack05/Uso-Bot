@@ -1,7 +1,8 @@
-﻿▬▬▬**Help for 'USERS' commands**▬▬▬
+▬▬▬**Help for 'USERS' commands**▬▬▬
 
 Uso! <:Bot:317951180737347587> is an osu bot made by Renondedju !
 If there is any problems, ask him some more help here ! https://discordapp.com/invite/mEeMPyK
+**I'm now available in game ! Look for UsoBot**
 
 The current command prefix is ``o!``
 
@@ -18,7 +19,8 @@ To use an option, simply type ``o!r /<option name> <option parameter>``
 *(The only supported mods for now are HD, HR and DT)*
 • ``/a <accuracy>`` or ``/accuracy <accuracy>`` allow you to change your 'future you' accuracy
 • ``/pp <number>`` allow to change the pp value of the recomendation (for training purpose)
-→*ex. o!r /c 5 /m HDDT*
+• ``/b (bpm)`` allow you to select the bpm
+→*ex. o!r /c 5 /m HDDT /b 170*
 
 	➥ ``user <your osu username> <mode>`` Displays user stats
 
@@ -49,7 +51,7 @@ To use an option, simply type ``o!r /<option name> <option parameter>``
 Look at the little circle on my profile !
 
 *The symbol <:dnd:317951077582503939> means* : I'm actually processing beatmaps or booting. Just wait a bit
-*The symbol <:away:317951063682711556> means* : I'm currently in developement, you can use me but i'm not verry stable and i can act oddly
+*The symbol <:away:317951063682711556> means* : Currently in developement, you can use me but I might be unstable and act weird
 *The symbol <:offline:317951122243452938> means* : Simply offline
 *The symbol <:online:317951041838514179> means* : Simply up and running !
 

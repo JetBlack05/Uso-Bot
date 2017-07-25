@@ -1,11 +1,9 @@
-#!/opt/python3/bin/python3
-
 import sqlite3
 import random
 
-def recommendation(discordId, conn, osu_id = 0, ranked = True, mods = "", count = 1, pp = None, acc = None):
+def recommendation(discordId, conn, osu_id = 0, ranked = True, mods = "", count = 1, pp = None, acc = None, bpm = None):
 
-	cursor = conn.cursor()
+	cursor = conn.cursor() #Connecting to the database
 
 	if osu_id ==0:
 		cursor.execute("SELECT * FROM users WHERE DiscordId = ?", [int(discordId),])
@@ -13,7 +11,7 @@ def recommendation(discordId, conn, osu_id = 0, ranked = True, mods = "", count 
 		cursor.execute("SELECT * FROM users WHERE osuId = ?", [int(osu_id),])
 
 	request_result = cursor.fetchall()[0]
-	osu_id = int(request_result[2])
+	osu_id = int(request_result[2]) #retriving the osu_id (should be in the database)
 
 	if pp == None:
 		pp_average = request_result[5]
@@ -29,6 +27,16 @@ def recommendation(discordId, conn, osu_id = 0, ranked = True, mods = "", count 
 	if mods == None: 
 		mods = select_mod((request_result[6], request_result[7], request_result[8], request_result[9], request_result[10], request_result[11], request_result[12], request_result[13]))
 
+	if bpm == None:
+		high_bpm = request_result[23]
+		low_bpm = request_result[24]
+		if 'DT' in mods:
+			high_bpm /= 1.5
+			low_bpm /= 1.5
+	else:
+		high_bpm = bpm + 5
+		low_bpm = bpm - 5
+
 	pp_querry = "PP_" + str(accuracy_average) + mods
 	recommended_querry =  {"": "NoMod_recommended", "_HR":"HR_recommended", "_HD":"HD_recommended", "_DT":"DT_recommended", "_DTHD":"DTHD_recommended", "_DTHR":"DTHR_recommended", "_HRHD":"HRHD_recommended", "_DTHRHD":"DTHRHD_recommended"}[mods]
 
@@ -41,8 +49,10 @@ def recommendation(discordId, conn, osu_id = 0, ranked = True, mods = "", count 
 	precision = 0.01
 	beatmaps = []
 	while beatmaps == []:
-		cursor.execute("SELECT * FROM beatmaps WHERE " + pp_querry + " <= ? AND " + pp_querry + " >= ? AND beatmapId NOT IN (" + recommended + ") AND ranked = ? LIMIT ?", [pp_average + (pp_average * precision), pp_average - (pp_average * precision), str(ranked), count])
+		cursor.execute("SELECT * FROM beatmaps WHERE " + pp_querry + " BETWEEN ? AND ? AND beatmapId NOT IN (" + recommended + ") AND ranked = ? AND bpm BETWEEN ? AND ? LIMIT ?", [pp_average - (pp_average * precision), pp_average + (pp_average * precision), str(ranked), low_bpm, high_bpm, count])
 		beatmaps = cursor.fetchall()
+		high_bpm += 5
+		low_bpm -= 5
 		precision += 0.01
 
 	recommended_beatmaps = []
@@ -57,13 +67,14 @@ def recommendation(discordId, conn, osu_id = 0, ranked = True, mods = "", count 
 		cursor.execute("SELECT PP_100" + mods + ", PP_99" + mods + ", PP_98" + mods + " FROM beatmaps WHERE beatmapId = ?", [beatmap[0],])
 		pp_results = cursor.fetchall()[0]
 
+		#title, od, cs, ar, hp, mods, version, bpm, combo, lenght, drain, stars, song_id, beatmap_id, ranked, pp 100, pp 99, pp 98, author
 		recommended_beatmaps.append((beatmap[9], od, cs, ar, hp, mods.replace("_", ""), beatmap[8], beatmap[5], beatmap[4], beatmap[6], beatmap[7], beatmap[3], beatmap[1], beatmap[0], ranked, pp_results[0], pp_results[1], pp_results[2], beatmap[10]))
 
 		recommended += "," + str(beatmap[0])
 
 	cursor.execute("UPDATE users SET " + recommended_querry + " = ? WHERE osuId = ?", [recommended, osu_id])
 	conn.commit()
-
+	
 	return recommended_beatmaps
 
 def select_mod(mods_chance):
